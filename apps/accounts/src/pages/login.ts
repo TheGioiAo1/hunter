@@ -125,7 +125,7 @@ function renderLogin(csrfToken: string, returnTo: string, error?: string): strin
     ? `<input type="hidden" name="return_to" value="${escapeHtmlAttr(returnTo)}"/>`
     : ''
 
-  const body = `
+  const content = `
     <h2 class="form-title">Log in to Gbox</h2>
     <p class="form-subtitle">Welcome back. Please enter your credentials.</p>
 
@@ -163,7 +163,7 @@ function renderLogin(csrfToken: string, returnTo: string, error?: string): strin
     </p>
   `
 
-  return authLayout({ title: 'Log in', body })
+  return authLayout({ title: 'Log in', content })
 }
 
 // ---------------------------------------------------------------------------
