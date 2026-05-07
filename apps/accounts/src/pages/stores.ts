@@ -9,50 +9,15 @@ import type { Request, Response } from 'express'
 import {
   getSessionTokenFromCookies,
   validateSession,
+  getUserShops,
 } from '@gbox/core/modules/auth/session.js'
 import { createCsrfStore } from '@gbox/core/modules/auth/csrf-express.js'
+import { getMongoDb } from '@gbox/core/modules/db/mongo.js'
+import type { ShopDoc, UserShopDoc } from '@gbox/core/modules/db/types.js'
 import { authLayout } from '../layouts/auth-layout.js'
 
 // CSRF cho delete-store form. Issue per page render → verify trên POST.
 const csrfStore = createCsrfStore({ cookieName: 'gbox_csrf_stores_delete' })
-
-// ---------------------------------------------------------------------------
-// Module-level database client. Core modules are already updated to handle
-// null db for demo/mock mode. Handlers are updated to remove the db parameter.
-// ---------------------------------------------------------------------------
-
-const db = null as any
-
-// ---------------------------------------------------------------------------
-// Gbox Shop Service — REST client (server-side fetch)
-// Backend: D:\Gbox\Gbox-Shop-Service · ShopController.List → GET /api
-// Doc: Authorization: Bearer <jwt>; query: page, limit, fields?, published?
-// Response: { pagination, data: { shops, total_rows_active, total_rows_inactive } }
-// ---------------------------------------------------------------------------
-
-const API_SHOP_BASE = (
-  process.env.API_SHOP_BASE_URL || 'https://api-shop.gbox.co'
-).replace(/\/+$/, '')
-
-interface ApiShop {
-  id: string
-  name?: string | null
-  title?: string | null
-  private_domain?: string | null
-  public_domain?: string | null
-  domain?: string | null
-  active?: boolean | null
-  currency?: string | null
-}
-
-interface ApiShopListResponse {
-  pagination?: { page: number; limit: number; count: number }
-  data?: {
-    shops?: ApiShop[]
-    total_rows_active?: number
-    total_rows_inactive?: number
-  }
-}
 
 interface RenderShop {
   shopId: string
@@ -61,74 +26,6 @@ interface RenderShop {
   role: string
   domain: string | null
   active: boolean
-}
-
-/** Đoán slug từ private_domain "shop_demo.mylencam.com" → "demo". */
-function deriveSlug(s: ApiShop): string {
-  const dom = s.private_domain || s.public_domain || s.domain || ''
-  if (!dom) return s.id
-  const head = dom.split('.')[0] || s.id
-  return head.replace(/^shop_/, '') || s.id
-}
-
-// Upstream timeout phải nhỏ hơn server.requestTimeout (30s in
-// configureKeepAlive) để handler có cơ hội render fallback page trước
-// khi Node cắt connection ("Empty reply from server").
-const SHOP_API_TIMEOUT_MS = 8000
-
-const SHOP_ID_RE = /^[a-f0-9]{24}$/i
-
-async function fetchShopsFromApi(token: string): Promise<RenderShop[]> {
-  const url = `${API_SHOP_BASE}/api?page=1&limit=250`
-  let resp: Response
-  try {
-    resp = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
-      signal: AbortSignal.timeout(SHOP_API_TIMEOUT_MS),
-    })
-  } catch (err: any) {
-    const reason = err?.name === 'TimeoutError' || err?.name === 'AbortError'
-      ? `timeout after ${SHOP_API_TIMEOUT_MS}ms`
-      : err?.message || String(err)
-    console.error(`[Stores] Shop API fetch failed (${reason}) — falling back to empty list`)
-    return []
-  }
-  if (!resp.ok) {
-    console.error(
-      `[Stores] Shop API ${resp.status} ${resp.statusText} — falling back to empty list`,
-    )
-    return []
-  }
-  const json = (await resp.json().catch(() => ({}))) as ApiShopListResponse
-  const list = json?.data?.shops ?? []
-  console.log('[Stores] BE returned %d shops; ids: %j', list.length, list.map((s) => s?.id))
-  return list
-    .filter((s): s is ApiShop => {
-      // BE Shop.id là Mongo ObjectId 24-hex. EmitDefaultValue=false → BE
-      // có thể omit `id` khi null. Skip để không build URL /admin/store/undefined
-      // gây middleware redirect ?error=invalid_shop_id.
-      if (!s || !s.id || !SHOP_ID_RE.test(s.id)) {
-        console.warn('[Stores] Skip shop với id không phải 24-hex:', s?.id, 'name:', s?.name)
-        return false
-      }
-      return true
-    })
-    .map((s) => {
-      const domain = s.public_domain || s.private_domain || s.domain || null
-      const slug = deriveSlug(s)
-      return {
-        shopId: s.id!,
-        shopName: s.name || s.title || slug,
-        shopSlug: slug,
-        role: 'owner',
-        domain,
-        active: s.active === true,
-      }
-    })
 }
 
 // ---------------------------------------------------------------------------
@@ -366,17 +263,29 @@ export async function getStores(
     return
   }
 
-  // Demo mode: validateSession có thể fail vì db null. Không block —
-  // ưu tiên gọi Shop API; nếu API trả 401 thì user redirect login từ
-  // 401-handler client-side (out of scope) hoặc thấy danh sách rỗng.
-  const result = await validateSession(db, token).catch(() => null)
-  const userName = result?.session?.user?.name || 'there'
+  const result = await validateSession(null, token).catch((err) => {
+    console.error('[Stores] validateSession failed:', err)
+    return null
+  })
+  if (!result?.valid || !result.session) {
+    res.redirect('/accounts/login')
+    return
+  }
+  const userName = result.session.user.name || 'there'
 
   let shops: RenderShop[] = []
   try {
-    shops = await fetchShopsFromApi(token)
+    const memberships = await getUserShops(null, result.session.user.id)
+    shops = memberships.map((m) => ({
+      shopId: m.shopId,
+      shopName: m.shopName,
+      shopSlug: m.shopSlug,
+      role: m.role,
+      domain: m.domain,
+      active: true, // getUserShops already filters by status='active'
+    }))
   } catch (err) {
-    console.error('[Stores] fetchShopsFromApi failed:', err)
+    console.error('[Stores] getUserShops failed:', err)
   }
 
   const reqHost = req.headers.host || 'localhost:4323'
@@ -388,8 +297,6 @@ export async function getStores(
 // ---------------------------------------------------------------------------
 // POST /accounts/stores/:shopId/delete — xóa shop qua BE Shop Service.
 // ---------------------------------------------------------------------------
-
-const SHOP_ID_RE_DEL = /^[a-f0-9]{24}$/i
 
 export async function postDeleteStore(
   req: Request,
@@ -404,27 +311,39 @@ export async function postDeleteStore(
     res.redirect('/accounts/stores?error=csrf_invalid')
     return
   }
+  const session = await validateSession(null, token).catch(() => null)
+  if (!session?.valid || !session.session) {
+    res.redirect('/accounts/login')
+    return
+  }
   const shopId = String(req.params.shopId ?? '')
-  if (!SHOP_ID_RE_DEL.test(shopId)) {
+  if (!shopId) {
     res.redirect('/accounts/stores?error=invalid_shop_id')
     return
   }
 
   try {
-    const r = await fetch(`${API_SHOP_BASE}/api/${encodeURIComponent(shopId)}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
-      signal: AbortSignal.timeout(SHOP_API_TIMEOUT_MS),
-    })
-    if (!r.ok) {
-      const body = await r.text().catch(() => '')
-      console.error(`[Stores] DELETE shop_id=${shopId} → HTTP ${r.status}: ${body.slice(0, 200)}`)
-      res.redirect(`/accounts/stores?error=${encodeURIComponent('delete_failed_' + r.status)}`)
+    const usersDb = await getMongoDb('USERS')
+    // Authorisation: caller must be `owner` on the shop OR have global owner role.
+    if (session.session.user.role !== 'owner') {
+      const membership = await usersDb
+        .collection<UserShopDoc>('user_shops')
+        .findOne({ user_id: session.session.user.id, shop_id: shopId })
+      if (!membership || membership.role !== 'owner') {
+        res.redirect('/accounts/stores?error=no_access')
+        return
+      }
+    }
+
+    const shopsDb = await getMongoDb('SHOPS')
+    const result = await shopsDb.collection<ShopDoc>('shops').deleteOne({ _id: shopId })
+    if (result.deletedCount === 0) {
+      res.redirect('/accounts/stores?error=shop_not_found')
       return
     }
+    // Cascade: drop all membership rows so dangling links don't surface
+    // on the next /stores render or on store-admin auth checks.
+    await usersDb.collection<UserShopDoc>('user_shops').deleteMany({ shop_id: shopId })
   } catch (err: any) {
     console.error('[Stores] DELETE failed:', err?.message || err)
     res.redirect('/accounts/stores?error=delete_failed')

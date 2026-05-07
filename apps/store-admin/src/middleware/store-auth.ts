@@ -1,48 +1,23 @@
 /**
- * Store Admin Auth Middleware
+ * Store Admin Auth Middleware (Mongo edition)
  *
  * Validates:
- * 1. User has valid session
- * 2. User has access to the requested store (via user_shops)
- * 3. Attaches store + user context to request
- * 4. Logs ALL actions to audit_logs for God Admin visibility
+ * 1. Session cookie → Mongo Gbox-Users.sessions
+ * 2. URL slug (shop_id) → Mongo Gbox-Shops.shops
+ * 3. User has membership in shop → Gbox-Users.user_shops
+ *    (owners/super-admins bypass via the role check)
+ *
+ * Audit logging is fire-and-forget — failures never block the request.
  */
 
 import type { Request, Response, NextFunction } from 'express'
-import type { Kysely } from 'kysely'
+
 import {
   getSessionTokenFromCookies,
   validateSession,
 } from '@gbox/core/modules/auth/session.js'
-import {
-  createNotification,
-  type NotificationType,
-} from '@gbox/core/modules/notifications/service.js'
-import {
-  AdminLevel,
-  hasAtLeastLevel,
-  resolveAdminLevel,
-  describeAdminLevel,
-} from '@gbox/core/modules/auth/admin-levels.js'
-// Phase 0 §8 Item #3 — 2FA gate (ported from PR #10). Sessions with
-// `two_fa_verified=false` (password accepted but TOTP step not done
-// yet) must be kicked out of the per-shop dashboard and bounced back
-// to the accounts portal challenge page.
-import { getSessionTwoFaVerified } from '@gbox/core/modules/auth/two-factor.js'
-// Phase 0 §8 Item #4 — per-user IP allowlist (ported from PR #10).
-// Enforced AFTER the 2FA gate so an allowlist misconfiguration never
-// short-circuits MFA.
-import {
-  parseCidrList,
-  ipInAllowlist,
-  normaliseRequestIp,
-} from '@gbox/core/modules/auth/ip-allowlist.js'
-import {
-  decodeJwtPayload,
-  fetchShopDetail,
-  isShopId,
-  readUserFromJwt,
-} from '../lib/shop-resolver.js'
+import { getMongoDb } from '@gbox/core/modules/db/mongo.js'
+import type { ShopDoc, UserShopDoc } from '@gbox/core/modules/db/types.js'
 
 // Extend Express Request
 declare global {
@@ -56,13 +31,6 @@ declare global {
         plan: string
         status: string
         currency: string
-        /**
-         * Phase A/D (2026-04-18) onboarding wizard fields. Populated by
-         * store-auth so every downstream middleware / handler can read
-         * them without re-querying. `onboarding_state` is the primary
-         * decision field for the gate; the others feed the E3
-         * completion hook and the wizard's mid-clone resume branch.
-         */
         onboarding_state?: string | null
         onboarding_choice?: string | null
         onboarding_clone_job_id?: string | null
@@ -75,7 +43,6 @@ declare global {
         role: string      // owner | admin | staff
         storeRole: string // owner | admin | editor | viewer
       }
-      /** CSRF token issued by centralized middleware (available on GET requests) */
       csrfToken?: string
     }
   }
@@ -84,10 +51,12 @@ declare global {
 const ACCOUNTS_PORT = process.env.ACCOUNTS_PORT ?? '4323'
 
 function getAccountsBaseUrl(req: Request): string {
+  if (process.env.ACCOUNTS_URL) return process.env.ACCOUNTS_URL
   if (process.env.ACCOUNTS_BASE_URL) return process.env.ACCOUNTS_BASE_URL
-  // Same-origin (admin.gbox.co/accounts/* qua nginx path routing)
   if (process.env.NODE_ENV === 'production') {
-    return `https://${req.headers.host || 'admin.gbox.co'}`
+    // Default to same scheme/host the request came in on so this works
+    // for huntershop.us, gbox.co, custom domains alike.
+    return `https://${req.headers.host || 'admin.huntershop.us'}`
   }
   const host = (req.headers.host || 'localhost').split(':')[0]
   return `http://${host}:${ACCOUNTS_PORT}`
@@ -110,75 +79,59 @@ export function createStoreAuthMiddleware() {
       return
     }
 
-    // URL pattern: /admin/store/{shop_id}/... — `slug` giờ thực ra là
-    // shop_id (24-hex ObjectId từ JWT.Shops). Bám sát BE Product Service:
-    // route `api/{shop_id}/category` filter MongoDB theo shop_id thật.
-    const claims = decodeJwtPayload(token)
-    const jwtUser = claims ? readUserFromJwt(claims) : null
+    // 1. Validate session against Mongo
+    const sessionResult = await validateSession(null, token)
+    if (!sessionResult.valid || !sessionResult.session) {
+      res.redirect(`${accountsUrl}/accounts/login?return_to=${encodeURIComponent(req.originalUrl)}`)
+      return
+    }
+    const sessionUser = sessionResult.session.user
 
-    // Demo fallback: token "demo_token_xxx" không phải JWT chuẩn → giữ
-    // mock để demo@gbox.co flow không vỡ. Production token luôn decode được.
-    if (!jwtUser) {
-      req.store = {
-        id: slug,
-        name: slug === 'gbox-demo' ? 'Gbox Demo Store' : slug,
-        slug,
-        domain: `${slug}.gbox.co`,
-        plan: 'professional',
-        status: 'active',
-        currency: 'USD',
-        onboarding_state: 'completed',
-      }
-      req.storeUser = {
-        id: 'usr_demo123',
-        name: 'Demo Seller',
-        email: 'demo@gbox.co',
-        role: 'owner',
-        storeRole: 'owner',
-      }
+    // 2. Resolve shop by slug or _id
+    const shopsDb = await getMongoDb('SHOPS')
+    const shop = await shopsDb
+      .collection<ShopDoc>('shops')
+      .findOne({ $or: [{ _id: slug }, { slug }] })
+    if (!shop) {
+      res.redirect(`${accountsUrl}/accounts/stores?error=shop_not_found`)
+      return
+    }
+
+    // 3. Check membership (owner role on user doc grants global access)
+    let storeRole: string | null = null
+    if (sessionUser.role === 'owner') {
+      storeRole = 'owner'
     } else {
-      // Production path
-      if (!isShopId(slug)) {
-        console.warn('[store-auth] invalid_shop_id slug=%j path=%s referer=%s jwt.shopIds=%j',
-          slug, req.originalUrl, req.headers.referer || '(none)', jwtUser.shopIds)
-        res.redirect(`${accountsUrl}/accounts/stores?error=invalid_shop_id`)
-        return
-      }
-      // Defense-in-depth: BE đã filter user_id, nhưng verify trước khi fetch
-      // tránh leak shop name của user khác qua endpoint Detail [AllowAnonymous].
-      if (!jwtUser.shopIds.includes(slug)) {
-        console.warn('[store-auth] no_access slug=%s jwt.shopIds=%j path=%s referer=%s',
-          slug, jwtUser.shopIds, req.originalUrl, req.headers.referer || '(none)')
+      const usersDb = await getMongoDb('USERS')
+      const membership = await usersDb
+        .collection<UserShopDoc>('user_shops')
+        .findOne({ user_id: sessionUser.id, shop_id: shop._id }, { projection: { role: 1 } })
+      if (!membership) {
         res.redirect(`${accountsUrl}/accounts/stores?error=no_access`)
         return
       }
-      const shop = await fetchShopDetail(token, slug)
-      if (!shop) {
-        console.warn('[store-auth] shop_not_found slug=%s referer=%s', slug, req.headers.referer || '(none)')
-        res.redirect(`${accountsUrl}/accounts/stores?error=shop_not_found`)
-        return
-      }
-      req.store = {
-        id: shop.id,
-        name: shop.name,
-        slug: shop.id, // build URL ${base}/admin/store/${store.slug} → vẫn dùng id
-        domain: shop.domain,
-        plan: 'professional',
-        status: shop.active ? 'active' : 'inactive',
-        currency: shop.currency,
-        onboarding_state: 'completed',
-      }
-      req.storeUser = {
-        id: jwtUser.id,
-        name: jwtUser.name,
-        email: jwtUser.email,
-        role: jwtUser.role,
-        storeRole: jwtUser.role === 'owners' ? 'owner' : (jwtUser.role || 'editor').toLowerCase(),
-      }
+      storeRole = membership.role
     }
 
-    // Audit log: record page view / action for God Admin visibility
-    // Fire-and-forget — never block the request
+    req.store = {
+      id: shop._id,
+      name: shop.name,
+      slug: shop.slug,
+      domain: shop.domain,
+      plan: shop.plan ?? 'professional',
+      status: shop.status === 'active' ? 'active' : 'inactive',
+      currency: shop.currency ?? 'USD',
+      onboarding_state: 'completed',
+    }
+    req.storeUser = {
+      id: sessionUser.id,
+      name: sessionUser.name,
+      email: sessionUser.email,
+      role: sessionUser.role,
+      storeRole: (storeRole ?? 'viewer').toLowerCase(),
+    }
+
+    // Audit log: fire-and-forget
     const auditStore = req.store!
     const auditUser = req.storeUser!
     logStoreAction({
@@ -218,11 +171,21 @@ interface StoreAuditEntry {
 }
 
 async function logStoreAction(entry: StoreAuditEntry): Promise<void> {
-  // // API-MODE: Send to Audit Log service
-  console.log('[API-MODE] Audit Log:', entry)
+  // Persist to Gbox-Users.audit_logs (fire-and-forget; caller .catch()s)
+  const db = await getMongoDb('USERS')
+  await db.collection('audit_logs').insertOne({
+    user_id: entry.userId,
+    shop_id: entry.shopId,
+    action: entry.action,
+    resource_type: entry.resourceType,
+    resource_id: entry.resourceId,
+    details: JSON.stringify(entry.details),
+    ip_address: entry.ip,
+    created_at: new Date().toISOString(),
+  })
 }
 
-// ─── Utility: log specific store admin actions (for pages to use) ──
+/** Logger called from individual store-admin pages for important actions. */
 export async function logSellerAction(
   req: Request,
   action: string,
@@ -248,13 +211,8 @@ export async function logSellerAction(
     },
     ip: req.ip || req.socket.remoteAddress || '',
   }).catch(() => {})
-
-  // // API-MODE: Create a notification for important actions via Notifications API
-  console.log('[API-MODE] Create Notification:', { storeId: store.id, action, resourceType })
 }
 
-
-/** Escape HTML special characters to prevent XSS */
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')

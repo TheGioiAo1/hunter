@@ -1,12 +1,26 @@
 /**
- * Gbox Platform — Auth Service
+ * Gbox Platform — Auth Service (Mongo edition)
  *
  * User management, sessions, API tokens, and shop role assignments.
+ * Backing collections live in `Gbox-Users` (users / user_shops /
+ * api_tokens) and `Gbox-Shops` (shops). Cross-DB joins are app-side
+ * (Mongo doesn't allow $lookup across databases).
+ *
+ * Legacy `db: Kysely<...>` first parameter is preserved on each function
+ * for source-compat with the dozens of callers still wiring it; the
+ * value is ignored — the helpers fetch the proper Mongo handle from
+ * `getMongoDb()`.
  */
 
 import { randomBytes, createHash } from 'crypto'
-import type { Kysely } from 'kysely'
-import type { Database } from '@gbox/db/schema/tables.js'
+import { nanoid } from 'nanoid'
+import { getMongoDb } from '../db/mongo.js'
+import type {
+  ApiTokenDoc,
+  ShopDoc,
+  UserDoc,
+  UserShopDoc,
+} from '../db/types.js'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -44,223 +58,206 @@ function hashToken(token: string): string {
 const DEFAULT_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 
 // ---------------------------------------------------------------------------
-// Service functions
+// Users
 // ---------------------------------------------------------------------------
 
-/**
- * Create a new user.
- */
 export async function createUser(
-  db: Kysely<Database>,
+  _db: unknown,
   data: CreateUserInput,
-) {
-  const user = await db
-    .insertInto('users')
-    .values({
-      email: data.email,
-      name: data.name ?? null,
-      avatar_url: data.avatar_url ?? null,
-    })
-    .returningAll()
-    .executeTakeFirstOrThrow()
-
-  return user
+): Promise<UserDoc> {
+  const db = await getMongoDb('USERS')
+  const now = new Date().toISOString()
+  const doc: UserDoc = {
+    _id: nanoid(),
+    email: data.email,
+    name: data.name ?? null,
+    password_hash: null,
+    role: 'staff',
+    status: 'pending_verification',
+    avatar_url: data.avatar_url ?? null,
+    created_at: now,
+    updated_at: now,
+  }
+  await db.collection<UserDoc>('users').insertOne(doc)
+  return doc
 }
 
-/**
- * Look up a user by email.
- */
 export async function getUserByEmail(
-  db: Kysely<Database>,
+  _db: unknown,
   email: string,
-) {
-  const user = await db
-    .selectFrom('users')
-    .selectAll()
-    .where('email', '=', email)
-    .executeTakeFirst()
-
-  return user ?? null
+): Promise<UserDoc | null> {
+  const db = await getMongoDb('USERS')
+  return db.collection<UserDoc>('users').findOne({ email })
 }
 
-/**
- * Create a session for a user. Returns the raw token (to be sent to the
- * client) along with the session row.
- */
+export async function getUserById(
+  _db: unknown,
+  id: string,
+): Promise<UserDoc | null> {
+  const db = await getMongoDb('USERS')
+  return db.collection<UserDoc>('users').findOne({ _id: id })
+}
+
+// ---------------------------------------------------------------------------
+// Sessions (token-based; cookies handled by session.ts. This helper is
+// the legacy minimal API that other code paths import directly.)
+// ---------------------------------------------------------------------------
+
 export async function createSession(
-  db: Kysely<Database>,
+  _db: unknown,
   userId: string,
   meta: SessionMeta = {},
 ) {
+  const db = await getMongoDb('USERS')
   const token = generateToken()
   const tokenHash = hashToken(token)
   const expiresAt = new Date(
     Date.now() + (meta.expires_in_ms ?? DEFAULT_SESSION_TTL_MS),
   ).toISOString()
 
-  const session = await db
-    .insertInto('sessions')
-    .values({
-      user_id: userId,
-      token_hash: tokenHash,
-      ip_address: meta.ip_address ?? null,
-      user_agent: meta.user_agent ?? null,
-      expires_at: expiresAt,
-    })
-    .returningAll()
-    .executeTakeFirstOrThrow()
+  const session = {
+    _id: nanoid(),
+    user_id: userId,
+    token_hash: tokenHash,
+    ip_address: meta.ip_address ?? null,
+    user_agent: meta.user_agent ?? null,
+    expires_at: expiresAt,
+    created_at: new Date().toISOString(),
+    two_fa_verified: true,
+  }
+  await db.collection('sessions').insertOne(session)
 
   return { token, session }
 }
 
-/**
- * Validate a session token. Returns the user and session if valid, or null.
- */
-export async function validateSession(
-  db: Kysely<Database>,
-  token: string,
-) {
+export async function validateSession(_db: unknown, token: string) {
+  const db = await getMongoDb('USERS')
   const tokenHash = hashToken(token)
 
-  const session = await db
-    .selectFrom('sessions')
-    .selectAll()
-    .where('token_hash', '=', tokenHash)
-    .where('expires_at', '>', new Date().toISOString())
-    .executeTakeFirst()
-
+  const session = await db.collection('sessions').findOne({
+    token_hash: tokenHash,
+    expires_at: { $gt: new Date().toISOString() },
+  })
   if (!session) return null
 
   const user = await db
-    .selectFrom('users')
-    .selectAll()
-    .where('id', '=', session.user_id)
-    .where('status', '=', 'active')
-    .executeTakeFirst()
-
+    .collection<UserDoc>('users')
+    .findOne({ _id: session.user_id, status: 'active' })
   if (!user) return null
 
   return { user, session }
 }
 
-/**
- * Delete (invalidate) a session by its raw token.
- */
-export async function deleteSession(
-  db: Kysely<Database>,
-  token: string,
-): Promise<void> {
-  const tokenHash = hashToken(token)
-  await db
-    .deleteFrom('sessions')
-    .where('token_hash', '=', tokenHash)
-    .execute()
+export async function deleteSession(_db: unknown, token: string): Promise<void> {
+  const db = await getMongoDb('USERS')
+  await db.collection('sessions').deleteOne({ token_hash: hashToken(token) })
 }
 
-/**
- * Assign a user to a shop with a given role.
- */
+// ---------------------------------------------------------------------------
+// User-Shop assignment
+// ---------------------------------------------------------------------------
+
 export async function assignUserToShop(
-  db: Kysely<Database>,
+  _db: unknown,
   userId: string,
   shopId: string,
   role: string = 'staff',
 ): Promise<void> {
+  const db = await getMongoDb('USERS')
   await db
-    .insertInto('user_shops')
-    .values({
-      user_id: userId,
-      shop_id: shopId,
-      role,
-    })
-    .onConflict((oc) =>
-      oc.columns(['user_id', 'shop_id']).doUpdateSet({ role } as any),
+    .collection<UserShopDoc>('user_shops')
+    .updateOne(
+      { user_id: userId, shop_id: shopId },
+      {
+        $set: { role },
+        $setOnInsert: {
+          _id: nanoid(),
+          user_id: userId,
+          shop_id: shopId,
+          created_at: new Date().toISOString(),
+        },
+      },
+      { upsert: true },
     )
-    .execute()
 }
 
-/**
- * Get all shops for a user, including their role in each.
- */
-export async function getUserShops(
-  db: Kysely<Database>,
-  userId: string,
-) {
-  const rows = await db
-    .selectFrom('user_shops')
-    .innerJoin('shops', 'shops.id', 'user_shops.shop_id')
-    .selectAll('shops')
-    .select('user_shops.role as user_role')
-    .where('user_shops.user_id', '=', userId)
-    .execute()
+export async function getUserShops(_db: unknown, userId: string) {
+  const usersDb = await getMongoDb('USERS')
+  const shopsDb = await getMongoDb('SHOPS')
 
-  return rows
+  const memberships = await usersDb
+    .collection<UserShopDoc>('user_shops')
+    .find({ user_id: userId })
+    .toArray()
+  if (memberships.length === 0) return []
+
+  const shopIds = memberships.map((m) => m.shop_id)
+  const shops = await shopsDb
+    .collection<ShopDoc>('shops')
+    .find({ _id: { $in: shopIds } })
+    .toArray()
+
+  const byId = new Map(shops.map((s) => [s._id, s]))
+  return memberships
+    .map((m) => {
+      const s = byId.get(m.shop_id)
+      if (!s) return null
+      return { ...s, user_role: m.role }
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
 }
 
-/**
- * Create an API token for a user + shop combination.
- * Returns the raw token (only shown once) and the stored row.
- */
+// ---------------------------------------------------------------------------
+// API tokens
+// ---------------------------------------------------------------------------
+
 export async function createApiToken(
-  db: Kysely<Database>,
+  _db: unknown,
   userId: string,
   shopId: string,
   input: CreateApiTokenInput,
 ) {
+  const db = await getMongoDb('USERS')
   const token = `gbox_${generateToken()}`
   const tokenHash = hashToken(token)
 
-  const row = await db
-    .insertInto('api_tokens')
-    .values({
-      user_id: userId,
-      shop_id: shopId,
-      name: input.label,
-      token_hash: tokenHash,
-      scopes: input.scopes ? JSON.stringify(input.scopes) : null,
-    })
-    .returningAll()
-    .executeTakeFirstOrThrow()
+  const row: ApiTokenDoc = {
+    _id: nanoid(),
+    user_id: userId,
+    shop_id: shopId,
+    name: input.label,
+    token_hash: tokenHash,
+    scopes: input.scopes ? JSON.stringify(input.scopes) : null,
+    last_used_at: null,
+    created_at: new Date().toISOString(),
+  }
+  await db.collection<ApiTokenDoc>('api_tokens').insertOne(row)
 
   return { token, api_token: row }
 }
 
-/**
- * Validate an API token. Returns the user, shop, and scopes if valid.
- */
-export async function validateApiToken(
-  db: Kysely<Database>,
-  token: string,
-) {
+export async function validateApiToken(_db: unknown, token: string) {
+  const usersDb = await getMongoDb('USERS')
+  const shopsDb = await getMongoDb('SHOPS')
   const tokenHash = hashToken(token)
 
-  const row = await db
-    .selectFrom('api_tokens')
-    .selectAll()
-    .where('token_hash', '=', tokenHash)
-    .executeTakeFirst()
-
+  const row = await usersDb
+    .collection<ApiTokenDoc>('api_tokens')
+    .findOne({ token_hash: tokenHash })
   if (!row) return null
 
-  // Update last_used_at
-  await db
-    .updateTable('api_tokens')
-    .set({ last_used_at: new Date().toISOString() } as any)
-    .where('id', '=', row.id)
-    .execute()
+  await usersDb
+    .collection<ApiTokenDoc>('api_tokens')
+    .updateOne(
+      { _id: row._id },
+      { $set: { last_used_at: new Date().toISOString() } },
+    )
 
   const [user, shop] = await Promise.all([
-    db
-      .selectFrom('users')
-      .selectAll()
-      .where('id', '=', row.user_id)
-      .where('status', '=', 'active')
-      .executeTakeFirst(),
-    db
-      .selectFrom('shops')
-      .selectAll()
-      .where('id', '=', row.shop_id)
-      .executeTakeFirst(),
+    usersDb
+      .collection<UserDoc>('users')
+      .findOne({ _id: row.user_id, status: 'active' }),
+    shopsDb.collection<ShopDoc>('shops').findOne({ _id: row.shop_id }),
   ])
 
   if (!user || !shop) return null
@@ -268,6 +265,6 @@ export async function validateApiToken(
   return {
     user,
     shop,
-    scopes: (row.scopes ?? []) as string[],
+    scopes: row.scopes ? (JSON.parse(row.scopes) as string[]) : [],
   }
 }

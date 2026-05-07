@@ -1,36 +1,17 @@
 /**
  * Gbox Platform — Two-Factor Authentication (TOTP + Email + Backup Codes)
  *
- * Phase 0.6 (God Admin hardening).
- *
- * Design goals
- * ------------
- * - Zero new npm dependencies. TOTP is ~50 lines of Node `crypto`; the
- *   QR code is generated client-side by pointing Google Charts /
- *   `otpauth://` URIs at Google Authenticator. The only non-trivial
- *   helper is base32 encoding which we implement inline (RFC 4648).
- *
- * - One module, three auth factors:
- *     1. TOTP    — primary (Google Authenticator, 1Password, Authy, ...)
- *     2. Email   — fallback when the authenticator is unavailable
- *     3. Backup codes — break-glass single-use codes
- *
- * - All verification helpers are timing-safe where it matters (backup
- *   codes, email OTP) and the TOTP verifier accepts a small ±1 step
- *   skew to tolerate clock drift.
- *
- * Storage is the `user_2fa` table (see migration 012).
- *
- * This module ONLY touches session.two_fa_verified on explicit calls
- * from the login handler (markSessionTwoFaPending / markSessionTwoFaVerified).
+ * Mongo edition. Storage: `Gbox-Users.user_2fa` (one doc per user; `_id`
+ * == user_id). Session 2FA flag lives on `Gbox-Users.sessions.two_fa_verified`.
  */
 
 import { createHmac, randomBytes, timingSafeEqual, createHash } from 'crypto'
-import type { Kysely } from 'kysely'
 import bcrypt from 'bcrypt'
+import { getMongoDb } from '../db/mongo.js'
+import type { TwoFactorDoc } from '../db/types.js'
 
 // ---------------------------------------------------------------------------
-// Base32 (RFC 4648) — for TOTP secret / otpauth URL
+// Base32 (RFC 4648)
 // ---------------------------------------------------------------------------
 
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
@@ -47,9 +28,7 @@ export function base32Encode(buf: Buffer): string {
       bits -= 5
     }
   }
-  if (bits > 0) {
-    out += BASE32_ALPHABET[(value << (5 - bits)) & 31]
-  }
+  if (bits > 0) out += BASE32_ALPHABET[(value << (5 - bits)) & 31]
   return out
 }
 
@@ -72,15 +51,14 @@ export function base32Decode(str: string): Buffer {
 }
 
 // ---------------------------------------------------------------------------
-// TOTP — RFC 6238 (SHA1, 30-second step, 6 digits)
+// TOTP — RFC 6238
 // ---------------------------------------------------------------------------
 
 const TOTP_STEP_SECONDS = 30
 const TOTP_DIGITS = 6
-const TOTP_SKEW = 1 // accept ±1 step for clock drift
+const TOTP_SKEW = 1
 
 function hotp(secret: Buffer, counter: number): string {
-  // 8-byte big-endian counter
   const ctr = Buffer.alloc(8)
   for (let i = 7; i >= 0; i--) {
     ctr[i] = counter & 0xff
@@ -93,22 +71,13 @@ function hotp(secret: Buffer, counter: number): string {
     ((hmac[offset + 1] & 0xff) << 16) |
     ((hmac[offset + 2] & 0xff) << 8) |
     (hmac[offset + 3] & 0xff)
-  const code = bin % 10 ** TOTP_DIGITS
-  return code.toString().padStart(TOTP_DIGITS, '0')
+  return (bin % 10 ** TOTP_DIGITS).toString().padStart(TOTP_DIGITS, '0')
 }
 
-export function generateTotpCode(
-  secretBase32: string,
-  at: number = Date.now(),
-): string {
-  const counter = Math.floor(at / 1000 / TOTP_STEP_SECONDS)
-  return hotp(base32Decode(secretBase32), counter)
+export function generateTotpCode(secretBase32: string, at: number = Date.now()): string {
+  return hotp(base32Decode(secretBase32), Math.floor(at / 1000 / TOTP_STEP_SECONDS))
 }
 
-/**
- * Constant-time verify of a TOTP code against the shared secret,
- * with ±TOTP_SKEW step tolerance.
- */
 export function verifyTotpCode(
   secretBase32: string,
   submittedCode: string,
@@ -123,11 +92,7 @@ export function verifyTotpCode(
   for (let delta = -TOTP_SKEW; delta <= TOTP_SKEW; delta++) {
     const expected = hotp(key, counter + delta)
     try {
-      if (
-        timingSafeEqual(Buffer.from(expected), Buffer.from(clean))
-      ) {
-        return true
-      }
+      if (timingSafeEqual(Buffer.from(expected), Buffer.from(clean))) return true
     } catch {
       // length mismatch — not equal
     }
@@ -135,29 +100,16 @@ export function verifyTotpCode(
   return false
 }
 
-/**
- * Generate a fresh 20-byte (160-bit) TOTP secret, base32-encoded.
- * 160 bits is the RFC 6238 recommendation for SHA1 TOTP.
- */
 export function generateTotpSecret(): string {
   return base32Encode(randomBytes(20))
 }
 
-/**
- * Build the `otpauth://` URI that Google Authenticator / 1Password /
- * Authy will scan into a new entry. Example output:
- *
- *   otpauth://totp/Gbox%20God%20Admin:admin@gbox.co
- *     ?secret=JBSWY3DPEHPK3PXP
- *     &issuer=Gbox%20God%20Admin
- *     &algorithm=SHA1&digits=6&period=30
- */
 export function buildOtpAuthUrl(params: {
   secretBase32: string
-  label: string // usually the user's email
+  label: string
   issuer?: string
 }): string {
-  const issuer = params.issuer ?? 'Gbox God Admin' // iron-rule-5-ok: default only used by god-admin enrollment; seller-facing callers (apps/accounts) pass issuer: 'Gbox' explicitly
+  const issuer = params.issuer ?? 'Gbox God Admin'
   const labelEnc = encodeURIComponent(`${issuer}:${params.label}`)
   const query = new URLSearchParams({
     secret: params.secretBase32,
@@ -177,17 +129,8 @@ const BACKUP_CODE_COUNT = 10
 const BACKUP_CODE_GROUPS = 2
 const BACKUP_CODE_GROUP_LEN = 5
 
-/**
- * Generate `BACKUP_CODE_COUNT` formatted single-use codes. Format:
- *
- *   "ABCDE-F2345"   (uppercase alphanumeric, hyphen-separated)
- *
- * Returns the PLAINTEXT codes — the caller must show these to the user
- * exactly ONCE and then store the bcrypt hashes (via hashBackupCodes).
- */
 export function generateBackupCodes(count: number = BACKUP_CODE_COUNT): string[] {
   const codes: string[] = []
-  // Avoid ambiguous chars (0/O, 1/I/L)
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
   for (let i = 0; i < count; i++) {
     let raw = ''
@@ -205,8 +148,6 @@ export function generateBackupCodes(count: number = BACKUP_CODE_COUNT): string[]
 }
 
 export async function hashBackupCodes(codes: string[]): Promise<string[]> {
-  // bcrypt rounds=10 — backup codes have ~50 bits entropy so 10 rounds
-  // is plenty, and we hash a batch of 10 on enrollment.
   return Promise.all(codes.map((c) => bcrypt.hash(normalizeBackupCode(c), 10)))
 }
 
@@ -215,30 +156,17 @@ function normalizeBackupCode(code: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Email OTP fallback — 6-digit code sent to user's email
+// Email OTP fallback
 // ---------------------------------------------------------------------------
 
-export const EMAIL_OTP_EXPIRY_MS = 10 * 60 * 1000 // 10 minutes
+export const EMAIL_OTP_EXPIRY_MS = 10 * 60 * 1000
 export const EMAIL_OTP_MAX_ATTEMPTS = 5
 
-/**
- * Generate a new 6-digit email OTP and return { code, hash, expiresAt }.
- * Store the hash + expiresAt in user_2fa; email the plaintext `code`.
- */
-export function generateEmailOtp(): {
-  code: string
-  hash: string
-  expiresAt: Date
-} {
-  // 6 random digits, leading-zero padded
+export function generateEmailOtp(): { code: string; hash: string; expiresAt: Date } {
   const n = randomBytes(4).readUInt32BE(0) % 1_000_000
   const code = n.toString().padStart(6, '0')
   const hash = createHash('sha256').update(code).digest('hex')
-  return {
-    code,
-    hash,
-    expiresAt: new Date(Date.now() + EMAIL_OTP_EXPIRY_MS),
-  }
+  return { code, hash, expiresAt: new Date(Date.now() + EMAIL_OTP_EXPIRY_MS) }
 }
 
 export function hashEmailOtp(code: string): string {
@@ -246,7 +174,7 @@ export function hashEmailOtp(code: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// DB helpers — thin wrappers that hide column names from callers
+// DB helpers
 // ---------------------------------------------------------------------------
 
 export interface TwoFactorRow {
@@ -261,243 +189,181 @@ export interface TwoFactorRow {
   last_used_at: string | null
 }
 
+function rowFromDoc(doc: TwoFactorDoc): TwoFactorRow {
+  return {
+    user_id: doc.user_id,
+    totp_secret: doc.totp_secret,
+    enabled: doc.enabled,
+    enabled_at: doc.enabled_at,
+    backup_codes_hashes: doc.backup_codes_hashes ?? [],
+    email_otp_hash: doc.email_otp_hash ?? null,
+    email_otp_expires_at: doc.email_otp_expires_at ?? null,
+    email_otp_attempts: doc.email_otp_attempts ?? 0,
+    last_used_at: doc.last_used_at,
+  }
+}
+
 export async function getTwoFactorRow(
-  db: Kysely<any>,
+  _db: unknown,
   userId: string,
 ): Promise<TwoFactorRow | null> {
-  if (!db) {
-    return {
-      user_id: userId,
-      enabled: false,
-      totp_secret: "JBSWY3DPEHPK3PXP", // Demo secret
-      backup_codes_hashes: [],
-      enabled_at: null,
-      last_used_at: null,
-    }
-  }
-
-  return await db
-    .selectFrom('user_2fa')
-    .selectAll()
-    .where('user_id', '=', userId)
-    .executeTakeFirst()
-  if (!row) return null
-  // backup_codes_hashes may come back as a string (jsonb text) in some
-  // pg drivers; normalise.
-  let hashes: (string | null)[] = []
-  if (Array.isArray(row.backup_codes_hashes)) {
-    hashes = row.backup_codes_hashes as (string | null)[]
-  } else if (typeof row.backup_codes_hashes === 'string') {
-    try {
-      hashes = JSON.parse(row.backup_codes_hashes)
-    } catch {
-      hashes = []
-    }
-  }
-  return {
-    user_id: row.user_id,
-    totp_secret: row.totp_secret,
-    enabled: row.enabled,
-    enabled_at: row.enabled_at,
-    backup_codes_hashes: hashes,
-    email_otp_hash: row.email_otp_hash,
-    email_otp_expires_at: row.email_otp_expires_at,
-    email_otp_attempts: row.email_otp_attempts,
-    last_used_at: row.last_used_at,
-  }
+  const db = await getMongoDb('USERS')
+  const doc = await db
+    .collection<TwoFactorDoc>('user_2fa')
+    .findOne({ _id: userId })
+  return doc ? rowFromDoc(doc) : null
 }
 
-/**
- * Is 2FA enabled (fully enrolled, not just pending setup) for this user?
- */
 export async function isTwoFactorEnabled(
-  db: Kysely<any>,
+  _db: unknown,
   userId: string,
 ): Promise<boolean> {
-  if (!db) return false // Demo: 2FA disabled by default for simplicity
-
-  const row = await db
-    .selectFrom('user_2fa')
-    .select(['enabled'])
-    .where('user_id', '=', userId)
-    .where('enabled', '=', true)
-    .executeTakeFirst()
-  return !!row
+  const db = await getMongoDb('USERS')
+  const doc = await db
+    .collection<TwoFactorDoc>('user_2fa')
+    .findOne({ _id: userId, enabled: true }, { projection: { _id: 1 } })
+  return !!doc
 }
 
-/**
- * Upsert a fresh (DISABLED) 2FA row with a brand new secret.
- * Used at the start of enrollment — the user then has to verify a
- * code to flip `enabled=true` via enableTwoFactor().
- */
 export async function startTwoFactorEnrollment(
-  db: Kysely<any>,
+  _db: unknown,
   userId: string,
 ): Promise<{ secret: string }> {
+  const db = await getMongoDb('USERS')
   const secret = generateTotpSecret()
-  if (!db) return { secret }
-
-  await db
-    .insertInto('user_2fa')
-    .values({
-      user_id: userId,
-      totp_secret: secret,
-      enabled: false,
-      backup_codes_hashes: JSON.stringify([]),
-    })
-    .onConflict((oc) =>
-      oc.column('user_id').doUpdateSet({
+  const now = new Date().toISOString()
+  await db.collection<TwoFactorDoc>('user_2fa').updateOne(
+    { _id: userId },
+    {
+      $set: {
         totp_secret: secret,
         enabled: false,
         enabled_at: null,
-        updated_at: new Date().toISOString(),
-      }),
-    )
-    .execute()
+        updated_at: now,
+      },
+      $setOnInsert: {
+        user_id: userId,
+        backup_codes_hashes: [],
+        email_otp_hash: null,
+        email_otp_expires_at: null,
+        email_otp_attempts: 0,
+        last_used_at: null,
+      },
+    },
+    { upsert: true },
+  )
   return { secret }
 }
 
-/**
- * Flip `enabled=true` and persist the new backup codes. Returns the
- * plaintext codes so the caller can show them ONCE to the user.
- */
 export async function enableTwoFactor(
-  db: Kysely<any>,
+  _db: unknown,
   userId: string,
 ): Promise<{ backupCodes: string[] }> {
+  const db = await getMongoDb('USERS')
   const backupCodes = generateBackupCodes()
-  if (!db) return { backupCodes }
-
   const hashes = await hashBackupCodes(backupCodes)
+  const now = new Date().toISOString()
 
-  await db
-    .updateTable('user_2fa')
-    .set({
-      enabled: true,
-      enabled_at: new Date().toISOString(),
-      backup_codes_hashes: JSON.stringify(hashes),
-      updated_at: new Date().toISOString(),
-    })
-    .where('user_id', '=', userId)
-    .execute()
-
+  await db.collection<TwoFactorDoc>('user_2fa').updateOne(
+    { _id: userId },
+    {
+      $set: {
+        enabled: true,
+        enabled_at: now,
+        backup_codes_hashes: hashes,
+        updated_at: now,
+      },
+    },
+  )
   return { backupCodes }
 }
 
-/**
- * Disable 2FA entirely and wipe the secret. Used from the settings
- * page (which requires a fresh password confirmation — enforced in
- * the handler, not here).
- */
-export async function disableTwoFactor(
-  db: Kysely<any>,
-  userId: string,
-): Promise<void> {
-  if (!db) return
-
-  await db
-    .deleteFrom('user_2fa')
-    .where('user_id', '=', userId)
-    .execute()
+export async function disableTwoFactor(_db: unknown, userId: string): Promise<void> {
+  const db = await getMongoDb('USERS')
+  await db.collection<TwoFactorDoc>('user_2fa').deleteOne({ _id: userId })
 }
 
-/**
- * Regenerate and persist a fresh batch of backup codes (bcrypt hashed).
- * Returns the plaintext codes to show the user.
- */
 export async function regenerateBackupCodes(
-  db: Kysely<any>,
+  _db: unknown,
   userId: string,
 ): Promise<string[]> {
+  const db = await getMongoDb('USERS')
   const codes = generateBackupCodes()
-  if (!db) return codes
-
   const hashes = await hashBackupCodes(codes)
-  await db
-    .updateTable('user_2fa')
-    .set({
-      backup_codes_hashes: JSON.stringify(hashes),
-      updated_at: new Date().toISOString(),
-    })
-    .where('user_id', '=', userId)
-    .execute()
+  await db.collection<TwoFactorDoc>('user_2fa').updateOne(
+    { _id: userId },
+    {
+      $set: {
+        backup_codes_hashes: hashes,
+        updated_at: new Date().toISOString(),
+      },
+    },
+  )
   return codes
 }
 
-/**
- * Try to consume a single backup code. On success, the matching slot
- * is nulled out so the code cannot be reused.
- */
 export async function consumeBackupCode(
-  db: Kysely<any>,
+  _db: unknown,
   userId: string,
   submittedCode: string,
 ): Promise<boolean> {
-  if (!db) return true // Demo: always success
-
-  const row = await getTwoFactorRow(db, userId)
+  const db = await getMongoDb('USERS')
+  const row = await getTwoFactorRow(_db, userId)
   if (!row || !row.enabled) return false
   const normalized = normalizeBackupCode(submittedCode)
 
   for (let i = 0; i < row.backup_codes_hashes.length; i++) {
     const hash = row.backup_codes_hashes[i]
-    if (!hash) continue // already used
+    if (!hash) continue
     // eslint-disable-next-line no-await-in-loop
     const match = await bcrypt.compare(normalized, hash)
     if (match) {
       const next = [...row.backup_codes_hashes]
       next[i] = null
-      await db
-        .updateTable('user_2fa')
-        .set({
-          backup_codes_hashes: JSON.stringify(next),
-          last_used_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .where('user_id', '=', userId)
-        .execute()
+      const now = new Date().toISOString()
+      await db.collection<TwoFactorDoc>('user_2fa').updateOne(
+        { _id: userId },
+        {
+          $set: {
+            backup_codes_hashes: next,
+            last_used_at: now,
+            updated_at: now,
+          },
+        },
+      )
       return true
     }
   }
   return false
 }
 
-/**
- * Persist a new email OTP hash + expiry (replacing any previous one).
- * Resets the attempt counter.
- */
 export async function storeEmailOtp(
-  db: Kysely<any>,
+  _db: unknown,
   userId: string,
   hash: string,
   expiresAt: Date,
 ): Promise<void> {
-  if (!db) return
-
-  await db
-    .updateTable('user_2fa')
-    .set({
-      email_otp_hash: hash,
-      email_otp_expires_at: expiresAt.toISOString(),
-      email_otp_attempts: 0,
-      updated_at: new Date().toISOString(),
-    })
-    .where('user_id', '=', userId)
-    .execute()
+  const db = await getMongoDb('USERS')
+  await db.collection<TwoFactorDoc>('user_2fa').updateOne(
+    { _id: userId },
+    {
+      $set: {
+        email_otp_hash: hash,
+        email_otp_expires_at: expiresAt.toISOString(),
+        email_otp_attempts: 0,
+        updated_at: new Date().toISOString(),
+      },
+    },
+  )
 }
 
-/**
- * Timing-safe verification of a submitted email OTP. Increments the
- * attempt counter on failure; wipes the code on success.
- */
 export async function verifyEmailOtp(
-  db: Kysely<any>,
+  _db: unknown,
   userId: string,
   submittedCode: string,
 ): Promise<{ ok: boolean; reason?: 'expired' | 'too_many_attempts' | 'invalid' }> {
-  if (!db) return { ok: true } // Demo: always success
-
-  const row = await getTwoFactorRow(db, userId)
+  const db = await getMongoDb('USERS')
+  const row = await getTwoFactorRow(_db, userId)
   if (!row || !row.email_otp_hash || !row.email_otp_expires_at) {
     return { ok: false, reason: 'invalid' }
   }
@@ -512,34 +378,34 @@ export async function verifyEmailOtp(
   const a = Buffer.from(row.email_otp_hash, 'hex')
   const b = Buffer.from(submittedHash, 'hex')
   let match = false
-  if (a.length === b.length) {
-    match = timingSafeEqual(a, b)
-  }
+  if (a.length === b.length) match = timingSafeEqual(a, b)
 
   if (!match) {
-    await db
-      .updateTable('user_2fa')
-      .set({
-        email_otp_attempts: row.email_otp_attempts + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .where('user_id', '=', userId)
-      .execute()
+    await db.collection<TwoFactorDoc>('user_2fa').updateOne(
+      { _id: userId },
+      {
+        $set: {
+          email_otp_attempts: row.email_otp_attempts + 1,
+          updated_at: new Date().toISOString(),
+        },
+      },
+    )
     return { ok: false, reason: 'invalid' }
   }
 
-  // Success — wipe the code so it can't be reused
-  await db
-    .updateTable('user_2fa')
-    .set({
-      email_otp_hash: null,
-      email_otp_expires_at: null,
-      email_otp_attempts: 0,
-      last_used_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .where('user_id', '=', userId)
-    .execute()
+  const now = new Date().toISOString()
+  await db.collection<TwoFactorDoc>('user_2fa').updateOne(
+    { _id: userId },
+    {
+      $set: {
+        email_otp_hash: null,
+        email_otp_expires_at: null,
+        email_otp_attempts: 0,
+        last_used_at: now,
+        updated_at: now,
+      },
+    },
+  )
   return { ok: true }
 }
 
@@ -551,69 +417,50 @@ function hashSessionToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
-/**
- * Called by the login handler immediately after password succeeds, if
- * the user has 2FA enrolled. Flips the sessions row into a
- * "password OK, still needs TOTP" state that the god-auth middleware
- * only allows on the /god-admin/login/2fa* routes.
- */
 export async function markSessionTwoFaPending(
-  db: Kysely<any>,
+  _db: unknown,
   rawToken: string,
 ): Promise<void> {
-  if (!db) return
-
-  const tokenHash = hashSessionToken(rawToken)
+  const db = await getMongoDb('USERS')
   await db
-    .updateTable('sessions')
-    .set({ two_fa_verified: false })
-    .where('token_hash', '=', tokenHash)
-    .execute()
+    .collection('sessions')
+    .updateOne(
+      { token_hash: hashSessionToken(rawToken) },
+      { $set: { two_fa_verified: false } },
+    )
 }
 
-/**
- * Called by the 2FA challenge handler on a successful second factor.
- * Flips the sessions row into a fully-verified state so the dashboard
- * becomes accessible.
- *
- * ALSO bumps the user_2fa.last_used_at column.
- */
 export async function markSessionTwoFaVerified(
-  db: Kysely<any>,
+  _db: unknown,
   rawToken: string,
   userId: string,
 ): Promise<void> {
-  if (!db) return
-
-  const tokenHash = hashSessionToken(rawToken)
+  const db = await getMongoDb('USERS')
   await db
-    .updateTable('sessions')
-    .set({ two_fa_verified: true })
-    .where('token_hash', '=', tokenHash)
-    .execute()
+    .collection('sessions')
+    .updateOne(
+      { token_hash: hashSessionToken(rawToken) },
+      { $set: { two_fa_verified: true } },
+    )
   await db
-    .updateTable('user_2fa')
-    .set({ last_used_at: new Date().toISOString() })
-    .where('user_id', '=', userId)
-    .execute()
+    .collection<TwoFactorDoc>('user_2fa')
+    .updateOne(
+      { _id: userId },
+      { $set: { last_used_at: new Date().toISOString() } },
+    )
 }
 
-/**
- * Read the two_fa_verified flag for a given raw session token. Used
- * by the god-auth middleware (Redis-cached path + DB fallback).
- */
 export async function getSessionTwoFaVerified(
-  db: Kysely<any>,
+  _db: unknown,
   rawToken: string,
 ): Promise<boolean | null> {
-  if (!db) return true // Demo: 2FA always verified
-
-  const tokenHash = hashSessionToken(rawToken)
+  const db = await getMongoDb('USERS')
   const row = await db
-    .selectFrom('sessions')
-    .select(['two_fa_verified'])
-    .where('token_hash', '=', tokenHash)
-    .executeTakeFirst()
+    .collection('sessions')
+    .findOne(
+      { token_hash: hashSessionToken(rawToken) },
+      { projection: { two_fa_verified: 1 } },
+    )
   if (!row) return null
-  return row.two_fa_verified
+  return row.two_fa_verified ?? true
 }

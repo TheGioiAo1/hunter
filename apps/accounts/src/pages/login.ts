@@ -1,29 +1,28 @@
 /**
- * Gbox Accounts — Login Page (Security Hardened)
+ * Gbox Accounts — Login Page (Mongo-direct edition)
  *
  * GET  /login  — Render login form with CSRF token
- * POST /login  — Validate credentials via api-auth.gbox.co, create session, redirect
+ * POST /login  — Validate credentials against Mongo Gbox-Users.users,
+ *                bcrypt-verify password, create session row in
+ *                Gbox-Users.sessions, set cookie, redirect.
  */
 
 import type { Request, Response } from 'express'
-import { AuthApi } from '../../../../packages/api-client/src/index.ts'
-import { OpenAPI } from '../../../../packages/api-client/src/auth/core/OpenAPI.ts'
 
-// Security modules
 import { createCsrfStore } from '@gbox/core/modules/auth/csrf-express.js'
 import { checkRateLimit, resetRateLimit } from '@gbox/core/modules/auth/rate-limit.js'
+import { logAuditEvent } from '@gbox/core/modules/auth/audit.js'
+import { verifyPassword } from '@gbox/core/modules/auth/password.js'
+import { getUserByEmail } from '@gbox/core/modules/auth/service.js'
 import {
+  createSession,
   getSessionCookieOptions,
   serializeSessionCookie,
 } from '@gbox/core/modules/auth/session.js'
 
-// Layout
 import { authLayout, googleIconSvg } from '../layouts/auth-layout.js'
 
 const csrfStore = createCsrfStore({ cookieName: 'gbox_csrf_login' })
-
-// Configure API Base
-OpenAPI.BASE = process.env.API_AUTH_BASE_URL || 'https://api-auth.gbox.co'
 
 const DEFAULT_POST_LOGIN = '/accounts/stores'
 
@@ -36,9 +35,8 @@ function getClientIp(req: Request): string {
 }
 
 /**
- * Only allow same-host relative paths as `return_to`. Anything else
- * (absolute URL, scheme-relative, path traversal) gets silently
- * dropped — no open-redirect surface.
+ * Same-origin relative paths only — drops absolute URLs / scheme-relative
+ * / control chars to close the open-redirect surface.
  */
 function safeReturnTo(raw: unknown): string {
   if (typeof raw !== 'string' || raw.length === 0) return ''
@@ -57,29 +55,30 @@ function escapeHtmlAttr(s: string): string {
 }
 
 /**
- * White-list field hiển thị + strip nhạy cảm (password, access_key) từ
- * `/auth/me` response trước khi đặt vào localStorage. Backend hiện trả
- * full User document; khi nó được hardened thì hàm này thành no-op.
+ * Whitelist allowed user fields when surfacing to the browser
+ * (localStorage). Avoid leaking password_hash / reset_token columns
+ * if a future change widens the projection.
  */
-function sanitizeUser(user: any): Record<string, unknown> {
+function sanitizeUser(user: Record<string, unknown>): Record<string, unknown> {
   if (!user || typeof user !== 'object') return {}
   const allowed = [
     'id', 'email', 'first_name', 'last_name', 'full_name',
-    'phone', 'avatar', 'role', 'is_active', 'create_date',
+    'name', 'avatar', 'avatar_url', 'role', 'is_active', 'create_date',
   ] as const
   const out: Record<string, unknown> = {}
   for (const k of allowed) {
-    if (user[k] !== undefined && user[k] !== null) out[k] = user[k]
+    const v = (user as Record<string, unknown>)[k]
+    if (v !== undefined && v !== null) out[k] = v
   }
   return out
 }
 
-/** XSS-safe JSON inline: chặn `</script>` + line separators trong literal. */
 function escapeInlineJson(value: unknown): string {
   return JSON.stringify(value)
     .replace(/</g, '\\u003c')
     .replace(/-->/g, '--\\u003e')
-    .replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029')
+    .replace(/ /g, '\\u2028')
+    .replace(/ /g, '\\u2029')
 }
 
 function renderLoginSuccessInterstitial(
@@ -118,42 +117,58 @@ function renderLoginSuccessInterstitial(
 }
 
 function renderLogin(csrfToken: string, returnTo: string, error?: string): string {
-  const rtSuffix = returnTo ? `?return_to=${encodeURIComponent(returnTo)}` : ''
-  const formAction = `/accounts/login${rtSuffix}`
-  const googleHref = `/accounts/auth/google${rtSuffix}`
-  return authLayout({
-    title: 'Log in',
-    content: `
-      <h1>Log in to Gbox</h1>
-      <p class="subtitle">Enter your credentials to access your stores</p>
+  const errorHtml = error
+    ? `<div class="error"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 12c-.6 0-1-.4-1-1s.4-1 1-1 1 .4 1 1-.4 1-1 1zm1-3H7V4h2v5z"/></svg>${error}</div>`
+    : ''
 
-      ${error ? `<div class="error-msg">${error}</div>` : ''}
+  const returnToInput = returnTo
+    ? `<input type="hidden" name="return_to" value="${escapeHtmlAttr(returnTo)}"/>`
+    : ''
 
-      <form method="POST" action="${escapeHtmlAttr(formAction)}">
-        ${csrfStore.hiddenField(csrfToken)}
+  const body = `
+    <h2 class="form-title">Log in to Gbox</h2>
+    <p class="form-subtitle">Welcome back. Please enter your credentials.</p>
 
-        <div class="form-group">
-          <label for="email">Email address</label>
-          <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" autofocus>
-        </div>
+    <form method="post" action="/accounts/login" autocomplete="on" novalidate>
+      <input type="hidden" name="_csrf" value="${csrfToken}"/>
+      ${returnToInput}
+      ${errorHtml}
 
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
-        </div>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required autocomplete="email" autofocus>
+      </div>
 
-        <button type="submit" class="btn btn-primary">Log in</button>
-      </form>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required autocomplete="current-password">
+      </div>
 
-      <div class="divider"><span>or</span></div>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Log in</button>
+      </div>
+    </form>
 
-      <a href="${escapeHtmlAttr(googleHref)}" class="btn btn-google">
-        ${googleIconSvg}
-        Continue with Google
-      </a>
-    `,
-  })
+    <div class="divider"><span>or</span></div>
+
+    <a href="/accounts/auth/google" class="btn-secondary">
+      ${googleIconSvg}
+      Continue with Google
+    </a>
+
+    <p class="form-footer">
+      <a href="/accounts/forgot-password" class="link">Forgot password?</a>
+      &nbsp;·&nbsp;
+      <a href="/accounts/signup" class="link">Create an account</a>
+    </p>
+  `
+
+  return authLayout({ title: 'Log in', body })
 }
+
+// ---------------------------------------------------------------------------
+// Handlers
+// ---------------------------------------------------------------------------
 
 export async function getLogin(req: Request, res: Response): Promise<void> {
   const returnTo = safeReturnTo(req.query.return_to)
@@ -161,117 +176,96 @@ export async function getLogin(req: Request, res: Response): Promise<void> {
   res.send(renderLogin(csrfToken, returnTo))
 }
 
-export async function postLogin(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function postLogin(req: Request, res: Response): Promise<void> {
   const ip = getClientIp(req)
   const returnTo = safeReturnTo(req.query.return_to)
 
-  // 1. Validate CSRF
   if (!(await csrfStore.verify(req))) {
     const csrfToken = await csrfStore.issue(res, isProduction())
     res.status(403).send(renderLogin(csrfToken, returnTo, 'Invalid form submission.'))
     return
   }
 
-  // 2. Check rate limit
   const rateKey = `login:${ip}`
   const rateResult = await checkRateLimit(rateKey)
   if (!rateResult.allowed) {
     const csrfToken = await csrfStore.issue(res, isProduction())
-    res.status(429).send(renderLogin(csrfToken, returnTo, 'Too many attempts.'))
+    res.status(429).send(renderLogin(csrfToken, returnTo, 'Too many attempts. Please wait a few minutes.'))
     return
   }
 
-  const { email, password } = req.body ?? {}
+  const { email, password } = (req.body ?? {}) as { email?: string; password?: string }
   if (!email || !password) {
     const csrfToken = await csrfStore.issue(res, isProduction())
-    res.status(400).send(renderLogin(csrfToken, returnTo, 'Required fields missing.'))
+    res.status(400).send(renderLogin(csrfToken, returnTo, 'Email and password are required.'))
     return
   }
 
+  const emailClean = email.toLowerCase().trim()
+
   try {
-    console.log(`[Login] Attempting login for: ${email}`);
-    
-    let accessToken: string;
-    let userData: any;
-
-    // Phase 14 Demo Mode — if email is demo@gbox.co or API fails, use demo data
-    if (email.toLowerCase().trim() === 'demo@gbox.co') {
-      console.log('[Login] Using Demo Mode for demo@gbox.co');
-      accessToken = 'demo_token_' + Math.random().toString(36).substring(7);
-      userData = { id: 'usr_demo123', email: 'demo@gbox.co', first_name: 'Demo', last_name: 'Seller', full_name: 'Demo Seller' };
-    } else {
-      try {
-        // 3. Call Auth API: GetToken (TokenController/GetToken)
-        const tokenResponse = await AuthApi.TokenService.postApiToken({
-          requestBody: {
-            email: email.toLowerCase().trim(),
-            password: password
-          } as any
-        });
-
-        console.log('[Login] Token API response received');
-
-        if (!tokenResponse || !tokenResponse.access_token) {
-            console.error('[Login] Auth API missing access_token in response:', tokenResponse);
-            throw new Error('Invalid response from Auth API (access_token missing)');
-        }
-
-        accessToken = tokenResponse.access_token;
-
-        // 4. Set OpenAPI token for subsequent calls
-        OpenAPI.TOKEN = accessToken;
-        console.log('[Login] Token set for User/Me call');
-
-        // 5. Call Auth API: /user/me (UserController/Me)
-        try {
-            userData = await AuthApi.UserService.getApiUserMe();
-            console.log('[Login] User/Me API success');
-        } catch (meErr: any) {
-            console.error('[Login] User/Me API failed:', meErr.message);
-            // Fallback to minimal user data from token or body if Me fails
-            userData = { email: email.toLowerCase().trim(), first_name: 'User' };
-        }
-      } catch (apiErr: any) {
-        console.warn('[Login] Auth API failed, falling back to demo data for UI building:', apiErr.message);
-        accessToken = 'demo_token_' + Math.random().toString(36).substring(7);
-        userData = { id: 'usr_demo123', email: email.toLowerCase().trim(), first_name: 'Demo', last_name: 'User' };
-      }
+    // 1. Lookup user
+    const user = await getUserByEmail(null, emailClean)
+    if (!user || !user.password_hash) {
+      await logAuditEvent(null, 'login_failed', { email: emailClean, ip, extra: { reason: 'no_user' } })
+      const csrfToken = await csrfStore.issue(res, isProduction())
+      res.status(401).send(renderLogin(csrfToken, returnTo, 'Invalid email or password.'))
+      return
     }
 
-    // 6. Save to Cookie (BFF style)
+    // 2. Verify password
+    const ok = await verifyPassword(password, user.password_hash)
+    if (!ok) {
+      await logAuditEvent(null, 'login_failed', { userId: user._id, email: emailClean, ip, extra: { reason: 'bad_password' } })
+      const csrfToken = await csrfStore.issue(res, isProduction())
+      res.status(401).send(renderLogin(csrfToken, returnTo, 'Invalid email or password.'))
+      return
+    }
+
+    // 3. Refuse disabled users
+    if (user.status === 'disabled') {
+      await logAuditEvent(null, 'login_failed', { userId: user._id, email: emailClean, ip, extra: { reason: 'disabled' } })
+      const csrfToken = await csrfStore.issue(res, isProduction())
+      res.status(403).send(renderLogin(csrfToken, returnTo, 'This account has been disabled.'))
+      return
+    }
+
+    // 4. Create session
+    const { token } = await createSession(null, user._id, {
+      ipAddress: ip,
+      userAgent: req.headers['user-agent'] ?? '',
+    })
+
+    // 5. Set cookies (HttpOnly session + browser-readable user snapshot)
     const isProd = isProduction()
     const cookieOpts = getSessionCookieOptions(isProd)
-    
-    console.log('[Login] Setting cookies and redirecting...');
-    
-    // Storing the main JWT token in a secure cookie
+    const userSnapshot = {
+      id: user._id,
+      email: user.email,
+      name: user.name ?? '',
+      full_name: user.name ?? '',
+      role: user.role,
+      avatar_url: user.avatar_url ?? null,
+    }
     res.setHeader('Set-Cookie', [
-        serializeSessionCookie(accessToken, cookieOpts),
-        `gbox_user=${encodeURIComponent(JSON.stringify(userData))}; Path=/; Max-Age=${30 * 24 * 3600}; SameSite=Lax${isProd ? '; Secure' : ''}`
-    ]);
+      serializeSessionCookie(token, cookieOpts),
+      `gbox_user=${encodeURIComponent(JSON.stringify(userSnapshot))}; Path=/; Max-Age=${30 * 24 * 3600}; SameSite=Lax${isProd ? '; Secure' : ''}`,
+    ])
 
     await resetRateLimit(rateKey)
+    await logAuditEvent(null, 'login_success', {
+      userId: user._id,
+      email: emailClean,
+      ip,
+      userAgent: req.headers['user-agent'],
+    })
 
-    // 7. Render interstitial: persist token + user vào localStorage browser,
-    //    rồi navigate. Cookie HttpOnly đã set ở bước 6 cho server-side auth.
-    //    Luôn redirect về danh sách store (DEFAULT_POST_LOGIN), bỏ qua
-    //    `return_to` để hành vi nhất quán: sau login → stores hub.
-    const target = DEFAULT_POST_LOGIN
-    const safeUser = sanitizeUser(userData)
-    res.send(renderLoginSuccessInterstitial(accessToken, safeUser, target))
-    console.log('[Login] Interstitial rendered');
-
-  } catch (err: any) {
-    // Detailed error logging
-    if (err.body) {
-        console.error('[Login] Auth API Error Body:', JSON.stringify(err.body, null, 2));
-    }
-    console.error('[Login] API Auth Error:', err.message);
-
+    // 6. Render interstitial — persist to localStorage then navigate.
+    //    Always land on the stores hub for consistency; ignore return_to.
+    res.send(renderLoginSuccessInterstitial(token, sanitizeUser(userSnapshot), DEFAULT_POST_LOGIN))
+  } catch (err) {
+    console.error('[Login] Unexpected error:', err instanceof Error ? err.message : err)
     const csrfToken = await csrfStore.issue(res, isProduction())
-    res.status(401).send(renderLogin(csrfToken, returnTo, `Login failed: ${err.message}`))
+    res.status(500).send(renderLogin(csrfToken, returnTo, 'Login failed. Please try again.'))
   }
 }

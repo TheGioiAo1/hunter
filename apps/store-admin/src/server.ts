@@ -48,6 +48,7 @@ import { strictLimiter } from '@gbox/core/modules/security/rate-limit.js'
 import { performanceMiddleware, configureKeepAlive } from '@gbox/core/modules/performance/middleware.js'
 import { requestLogger, correlationId, shopifyErrorHandler, installProcessErrorHandlers } from '@gbox/core/modules/logging/logger.js'
 import { getRedis, closeRedis } from '@gbox/core/modules/cache/redis.js'
+import { connectMongo, closeMongo } from '@gbox/core/modules/db/mongo.js'
 
 // ─── Pages ──────────────────────────────────────────────────────
 
@@ -2366,6 +2367,11 @@ import { ensureBuiltinSchemas } from '@gbox/core/modules/themes/section-schemas-
   }
 })()
 
+connectMongo(['USERS', 'SHOPS']).catch((err) => {
+  console.error('[Gbox Store Admin] Mongo connect failed:', err)
+  process.exit(1)
+})
+
 const server = app.listen(PORT, () => {
   console.log(`[Gbox Store Admin] Running on http://localhost:${PORT} | PID: ${process.pid}`)
   console.log(`[Gbox Store Admin] Routes: ~80 (12 feature groups A-L)`)
@@ -2379,6 +2385,7 @@ configureKeepAlive(server)
 async function shutdown() {
   console.log('[Gbox Store Admin] Shutting down...')
   await closeRedis()
+  await closeMongo()
   process.exit(0)
 }
 

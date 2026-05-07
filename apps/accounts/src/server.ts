@@ -30,6 +30,7 @@ import { authLimiter, pageLimiter } from '@gbox/core/modules/security/rate-limit
 import { performanceMiddleware, configureKeepAlive } from '@gbox/core/modules/performance/middleware.js'
 import { requestLogger, correlationId, shopifyErrorHandler, installProcessErrorHandlers } from '@gbox/core/modules/logging/logger.js'
 import { closeRedis } from '@gbox/core/modules/cache/redis.js'
+import { connectMongo, closeMongo } from '@gbox/core/modules/db/mongo.js'
 import {
   getSessionTokenFromCookies,
   clearSessionCookie,
@@ -313,6 +314,14 @@ app.get('/health', (_req, res) => {
 app.use(shopifyErrorHandler())
 installProcessErrorHandlers('gbox-accounts', { db: null as any })
 
+// Eagerly open Mongo before accepting traffic so the first /login request
+// doesn't pay TCP+auth latency. Failure here aborts startup — auth flow
+// has no DB-less fallback in this build.
+connectMongo(['USERS', 'SHOPS']).catch((err) => {
+  console.error('[Gbox Accounts] Mongo connect failed:', err)
+  process.exit(1)
+})
+
 const server = app.listen(PORT, () => {
   console.log(`[Gbox Accounts] Running on http://localhost:${PORT} | PID: ${process.pid}`)
   console.log(`[Gbox Accounts] ENV: ${process.env.NODE_ENV ?? 'development'}`)
@@ -325,6 +334,7 @@ configureKeepAlive(server)
 async function shutdown() {
   console.log('[Gbox Accounts] Shutting down...')
   await closeRedis()
+  await closeMongo()
   process.exit(0)
 }
 

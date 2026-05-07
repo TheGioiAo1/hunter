@@ -20,6 +20,7 @@
     "jszip": "^3.10.1",
     "kysely": "^0.28.15",
     "liquidjs": "^10.21.0",
+    "mongodb": "^6.10.0",
     "p-limit": "^5.0.0",
     "p-retry": "^8.0.0",
     "pixelmatch": "^6.0.0",
