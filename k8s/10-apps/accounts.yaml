@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accounts
+  namespace: gbox-fe
+  labels: { app: accounts }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: accounts } }
+  template:
+    metadata: { labels: { app: accounts } }
+    spec:
+      containers:
+        - name: accounts
+          image: ghcr.io/thegioiao1/hunter:dev
+          imagePullPolicy: IfNotPresent
+          command: ["sh","-c","node --import tsx apps/accounts/src/server.ts"]
+          ports: [{ containerPort: 4323 }]
+          env:
+            - { name: ACCOUNTS_PORT, value: "4323" }
+          envFrom:
+            - configMapRef: { name: apps-config }
+            - secretRef:    { name: apps-secrets }
+            - secretRef:    { name: gbox-db-credentials }
+          readinessProbe:
+            tcpSocket: { port: 4323 }
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: accounts, namespace: gbox-fe }
+spec:
+  selector: { app: accounts }
+  ports: [{ port: 4323, targetPort: 4323 }]

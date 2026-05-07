@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supporter
+  namespace: gbox-fe
+  labels: { app: supporter }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: supporter } }
+  template:
+    metadata: { labels: { app: supporter } }
+    spec:
+      containers:
+        - name: supporter
+          image: ghcr.io/thegioiao1/hunter:dev
+          imagePullPolicy: IfNotPresent
+          command: ["sh","-c","node --import tsx apps/supporter/start.mjs"]
+          ports: [{ containerPort: 4328 }]
+          env:
+            - { name: SUPPORTER_PORT, value: "4328" }
+          envFrom:
+            - configMapRef: { name: apps-config }
+            - secretRef:    { name: apps-secrets }
+            - secretRef:    { name: gbox-db-credentials }
+          readinessProbe:
+            tcpSocket: { port: 4328 }
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: supporter, namespace: gbox-fe }
+spec:
+  selector: { app: supporter }
+  ports: [{ port: 4328, targetPort: 4328 }]

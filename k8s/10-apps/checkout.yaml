@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+  namespace: gbox-fe
+  labels: { app: checkout }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: checkout } }
+  template:
+    metadata: { labels: { app: checkout } }
+    spec:
+      containers:
+        - name: checkout
+          image: ghcr.io/thegioiao1/hunter:dev
+          imagePullPolicy: IfNotPresent
+          command: ["sh","-c","node --import tsx apps/checkout/src/server.ts"]
+          ports: [{ containerPort: 4327 }]
+          env:
+            - { name: CHECKOUT_PORT, value: "4327" }
+          envFrom:
+            - configMapRef: { name: apps-config }
+            - secretRef:    { name: apps-secrets }
+            - secretRef:    { name: gbox-db-credentials }
+          readinessProbe:
+            tcpSocket: { port: 4327 }
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: checkout, namespace: gbox-fe }
+spec:
+  selector: { app: checkout }
+  ports: [{ port: 4327, targetPort: 4327 }]

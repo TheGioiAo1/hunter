@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: god-admin
+  namespace: gbox-fe
+  labels: { app: god-admin }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: god-admin } }
+  template:
+    metadata: { labels: { app: god-admin } }
+    spec:
+      containers:
+        - name: god-admin
+          image: ghcr.io/thegioiao1/hunter:dev
+          imagePullPolicy: IfNotPresent
+          command: ["sh","-c","node --import tsx apps/god-admin/src/server.ts"]
+          ports: [{ containerPort: 4324 }]
+          env:
+            - { name: GOD_ADMIN_PORT, value: "4324" }
+          envFrom:
+            - configMapRef: { name: apps-config }
+            - secretRef:    { name: apps-secrets }
+            - secretRef:    { name: gbox-db-credentials }
+          readinessProbe:
+            tcpSocket: { port: 4324 }
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: god-admin, namespace: gbox-fe }
+spec:
+  selector: { app: god-admin }
+  ports: [{ port: 4324, targetPort: 4324 }]

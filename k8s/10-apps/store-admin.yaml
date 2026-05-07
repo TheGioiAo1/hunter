@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: store-admin
+  namespace: gbox-fe
+  labels: { app: store-admin }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: store-admin } }
+  template:
+    metadata: { labels: { app: store-admin } }
+    spec:
+      containers:
+        - name: store-admin
+          image: ghcr.io/thegioiao1/hunter:dev
+          imagePullPolicy: IfNotPresent
+          command: ["sh","-c","node --import tsx apps/store-admin/src/server.ts"]
+          ports: [{ containerPort: 4325 }]
+          env:
+            - { name: STORE_ADMIN_PORT, value: "4325" }
+          envFrom:
+            - configMapRef: { name: apps-config }
+            - secretRef:    { name: apps-secrets }
+            - secretRef:    { name: gbox-db-credentials }
+          readinessProbe:
+            tcpSocket: { port: 4325 }
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: store-admin, namespace: gbox-fe }
+spec:
+  selector: { app: store-admin }
+  ports: [{ port: 4325, targetPort: 4325 }]

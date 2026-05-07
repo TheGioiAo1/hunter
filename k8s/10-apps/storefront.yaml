@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storefront
+  namespace: gbox-fe
+  labels: { app: storefront }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: storefront } }
+  template:
+    metadata: { labels: { app: storefront } }
+    spec:
+      containers:
+        - name: storefront
+          image: ghcr.io/thegioiao1/hunter:dev
+          imagePullPolicy: IfNotPresent
+          command: ["sh","-c","node --import tsx storefront-start.mjs"]
+          ports: [{ containerPort: 4326 }]
+          env:
+            - { name: PORT, value: "4326" }
+          envFrom:
+            - configMapRef: { name: apps-config }
+            - secretRef:    { name: apps-secrets }
+            - secretRef:    { name: gbox-db-credentials }
+          readinessProbe:
+            tcpSocket: { port: 4326 }
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits:   { cpu: 500m, memory: 512Mi }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: storefront, namespace: gbox-fe }
+spec:
+  selector: { app: storefront }
+  ports: [{ port: 4326, targetPort: 4326 }]

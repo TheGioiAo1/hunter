@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hunter-fe-ingress
+  namespace: gbox-fe
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+spec:
+  ingressClassName: public
+  rules:
+    - host: huntershop.us
+      http: { paths: [{ path: /, pathType: Prefix, backend: { service: { name: storefront,       port: { number: 4326 } } } }] }
+    - host: api.huntershop.us
+      http: { paths: [{ path: /, pathType: Prefix, backend: { service: { name: api,              port: { number: 4321 } } } }] }
+    - host: accounts.huntershop.us
+      http: { paths: [{ path: /, pathType: Prefix, backend: { service: { name: accounts,         port: { number: 4323 } } } }] }
+    - host: god.huntershop.us
+      http: { paths: [{ path: /, pathType: Prefix, backend: { service: { name: god-admin,        port: { number: 4324 } } } }] }
+    - host: admin.huntershop.us
+      http: { paths: [{ path: /, pathType: Prefix, backend: { service: { name: store-admin,      port: { number: 4325 } } } }] }
+    - host: checkout.huntershop.us
+      http: { paths: [{ path: /, pathType: Prefix, backend: { service: { name: checkout,         port: { number: 4327 } } } }] }
+    - host: support.huntershop.us
+      http: { paths: [{ path: /, pathType: Prefix, backend: { service: { name: supporter,        port: { number: 4328 } } } }] }
+    - host: agent.god.huntershop.us
+      http: { paths: [{ path: /, pathType: Prefix, backend: { service: { name: god-admin-agent,  port: { number: 4329 } } } }] }

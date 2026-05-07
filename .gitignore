@@ -106,3 +106,6 @@ tmp/
 # Generated demo SVG from preview-world-map.mjs (regenerated on demand).
 apps/store-admin/scripts/.world-preview.svg
 .claude/worktrees/
+
+# K8s secrets — never commit
+k8s/02-db-secrets.yaml
