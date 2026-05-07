@@ -11,7 +11,6 @@ metadata:
   namespace: gbox-fe
 spec:
   type: ClusterIP
-  clusterIP: None
   ports:
     - name: mongo
       port: 27017
@@ -39,7 +38,6 @@ metadata:
   namespace: gbox-fe
 spec:
   type: ClusterIP
-  clusterIP: None
   ports:
     - name: redis
       port: 6379
