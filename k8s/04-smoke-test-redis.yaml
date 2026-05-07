@@ -1,0 +1,34 @@
+# Smoke test: redis-cli ping + set/get key qua DNS in-cluster.
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: smoke-redis
+  namespace: gbox-fe
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: redis-cli
+          image: redis:7-alpine
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "=== resolving DNS ==="
+              getent hosts redis || true
+              echo "=== ping + set/get ==="
+              redis-cli -u "$REDIS_URL" PING
+              redis-cli -u "$REDIS_URL" SET smoke:from "machine2-fe-cluster" EX 60
+              redis-cli -u "$REDIS_URL" GET smoke:from
+              redis-cli -u "$REDIS_URL" DEL smoke:from
+              echo "OK"
+          env:
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: gbox-db-credentials
+                  key: REDIS_URL

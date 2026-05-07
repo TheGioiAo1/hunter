@@ -1,0 +1,60 @@
+# ExternalName + Endpoints để pod trong cluster Machine 2 resolve DNS
+# `mongodb.gbox-fe.svc.cluster.local` → IP của Machine 1 NodePort.
+# Lý do: FE code sau này set MONGO_URL=mongodb://mongodb:27017/... mà không
+# cần hardcode IP. Đổi máy DB chỉ cần sửa Endpoints, code không đổi.
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: gbox-fe
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: mongo
+      port: 27017
+      targetPort: 30017
+      protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: mongodb
+  namespace: gbox-fe
+subsets:
+  - addresses:
+      - ip: 192.168.1.19
+    ports:
+      - name: mongo
+        port: 30017
+        protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: gbox-fe
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 30379
+      protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: redis
+  namespace: gbox-fe
+subsets:
+  - addresses:
+      - ip: 192.168.1.19
+    ports:
+      - name: redis
+        port: 30379
+        protocol: TCP

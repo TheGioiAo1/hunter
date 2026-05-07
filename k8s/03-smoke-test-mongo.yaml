@@ -1,0 +1,39 @@
+# Smoke test: pod Alpine + mongosh kiểm Mongo Machine 1 từ trong cluster Machine 2.
+# Apply: `kubectl apply -f 03-smoke-test-mongo.yaml`
+# Theo dõi log: `kubectl logs -n gbox-fe -f job/smoke-mongo`
+# Cleanup:    `kubectl delete -f 03-smoke-test-mongo.yaml`
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: smoke-mongo
+  namespace: gbox-fe
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: mongosh
+          image: mongo:6
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "=== resolving DNS ==="
+              getent hosts mongodb || true
+              echo "=== insertOne + find on Gbox-Users ==="
+              mongosh "$MONGO_USERS" --quiet --eval '
+                const r = db.smoke.insertOne({ at: new Date(), from: "machine2-fe-cluster" });
+                printjson(r);
+                printjson(db.smoke.find().sort({ at: -1 }).limit(3).toArray());
+                db.smoke.deleteMany({ from: "machine2-fe-cluster" });
+                print("OK");
+              '
+          env:
+            - name: MONGO_USERS
+              valueFrom:
+                secretKeyRef:
+                  name: gbox-db-credentials
+                  key: MONGO_USERS
