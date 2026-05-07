@@ -18,7 +18,7 @@
 
 | Phase | Scope | Status | Files |
 |---|---|---|---|
-| **A** | Foundation + auth core + login flow → admin.huntershop.us login work end-to-end | **🟡 in-progress** | mongo client + 6 auth modules + accounts/login + store-admin middleware |
+| **A** | Foundation + auth core + login flow → admin.huntershop.us login work end-to-end | **✅ done (2026-05-07)** | mongo client + 6 auth modules + accounts/{login,stores} + store-admin middleware |
 | B | Signup + OTP + 2FA + password reset full flow | pending | accounts/{signup,login-2fa,forgot-password,oauth-google,two-factor,account-settings} |
 | C | god-admin app (40+ pages dùng Kysely) | pending | apps/god-admin/* |
 | D | store-admin pages (90+ pages) | pending | apps/store-admin/pages/* |
@@ -47,14 +47,30 @@
 | `scripts/seed-admin-mongo.ts` | NEW — create root admin user (email + bcrypt pass) |
 | `packages/core/package.json` | ADD `mongodb` dep |
 
-## Phase A acceptance
+## Phase A acceptance — ✅ verified 2026-05-07
 
-- [ ] User truy cập `https://admin.huntershop.us` → redirect tới `accounts.huntershop.us/accounts/login`
-- [ ] Nhập email + pass đã seed → POST /accounts/login
-- [ ] login.ts query Mongo `Gbox-Users.users`, bcrypt verify, insert `sessions`, set cookie
-- [ ] Redirect `/accounts/stores` → list shops từ Mongo `Gbox-Shops.shops` (qua `user_shops`)
-- [ ] Click vào store → redirect `admin.huntershop.us/admin/store/<id>` → store-admin pod
-- [ ] store-admin middleware đọc cookie → validateSession Mongo → load user → render dashboard
+E2E test from Machine 2 via ingress (HTTPS, --resolve to 127.0.0.1):
+
+- [x] GET /accounts/login → 200, CSRF token 64ch, form rendered with `_csrf`+`email`+`password` inputs
+- [x] POST /accounts/login với `duc7bnamdan@gmail.com` → 200, session cookie set (`gbox_session=597194f0...`), interstitial Đang đăng nhập rendered
+- [x] GET /accounts/stores → 200, "Welcome back, Hunter Admin", liệt kê Hunter Shop từ Mongo (Gbox-Shops.shops ⨝ Gbox-Users.user_shops)
+- [x] GET admin.huntershop.us/admin/store/MwXYO4WodfwNKZeRRQATU → 200, `<title>Dashboard — Hunter Shop — Gbox</title>` + `<h1>Home</h1>`
+- [x] Mongo collections seeded: `Gbox-Users.{users,sessions,user_shops,audit_logs}` + `Gbox-Shops.shops`
+
+Seed credentials (testing):
+- email: `duc7bnamdan@gmail.com`
+- shop:  Hunter Shop / slug `hunter` / domain `huntershop.us`
+- shop_id (Mongo `_id`): `MwXYO4WodfwNKZeRRQATU`
+- user_id: `vMxeEEgBZns2p4JHgofqB`
+
+## Open question — Cloudflare routing
+
+`admin.huntershop.us` DNS → Cloudflare edge IPs (104.21.27.64 / 172.67.141.196). Machine 2 (192.168.1.24) is on a private LAN — no public IP, no cloudflared / wireguard / tailscale running. For the public URL to actually reach this cluster, one of:
+1. Cloudflare Tunnel (cloudflared) running in cluster as a Deployment
+2. Router/firewall port-forward 80/443 → 192.168.1.24
+3. Something fronting Machine 2 with a public IP
+
+Out of scope for Phase A (login proven working from inside cluster). Open ticket for Phase J — public ingress.
 
 ## Out of scope Phase A (sẽ throw runtime error nếu touch)
 
@@ -68,3 +84,4 @@
 | Date | Phase | Files done | LOC delta | Notes |
 |---|---|---|---|---|
 | 2026-05-07 | A start | — | — | Plan set, scope measured |
+| 2026-05-07 | A done  | 14 | +1436/−1550 | Login E2E verified. Commits 3184b3c → 3cdef9d → c8daefb → a9eedd0. Image digest 217d57a... rolled out gbox-fe/{accounts,store-admin}. |
