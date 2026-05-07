@@ -1,0 +1,16 @@
+{% comment %}
+  variant: minimal
+  tokens_required: [fonts.primary, colors.foreground, colors.background]
+  description: Text-only hero, generous whitespace. No image — letting typography carry the brand.
+{% endcomment %}
+<div class="hero hero--minimal">
+  <div class="container hero__minimal">
+    <h1 class="hero__headline">{{ hero.headline }}</h1>
+    {% if hero.subhead %}
+      <p class="hero__subhead">{{ hero.subhead }}</p>
+    {% endif %}
+    {% if hero.cta_label and hero.cta_href %}
+      <a class="btn btn-primary" href="{{ hero.cta_href }}">{{ hero.cta_label }}</a>
+    {% endif %}
+  </div>
+</div>

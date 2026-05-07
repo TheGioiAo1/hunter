@@ -1,0 +1,23 @@
+{% comment %}
+  variant: split-text-image
+  tokens_required: [colors.primary, colors.background, fonts.primary, fonts.secondary, layout.container_max_width]
+  description: 50/50 split — text left, image right. Editorial/lifestyle vibe.
+{% endcomment %}
+<div class="hero hero--split">
+  <div class="container hero__grid">
+    <div class="hero__text">
+      <h1 class="hero__headline">{{ hero.headline }}</h1>
+      {% if hero.subhead %}
+        <p class="hero__subhead">{{ hero.subhead }}</p>
+      {% endif %}
+      {% if hero.cta_label and hero.cta_href %}
+        <a class="btn btn-primary" href="{{ hero.cta_href }}">{{ hero.cta_label }}</a>
+      {% endif %}
+    </div>
+    <div class="hero__media">
+      {% if hero.image_url %}
+        <img src="{{ hero.image_url }}" alt="{{ hero.image_alt | default: hero.headline }}" loading="eager">
+      {% endif %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,14 @@
+{% comment %}
+  variant: minimal
+  tokens_required: [components.header.height, components.header.background, fonts.primary]
+  description: Logo center, simple horizontal nav, no utility row.
+{% endcomment %}
+<div class="header header--minimal">
+  <div class="container header__minimal">
+    <a class="header__logo" href="/">{{ shop_name }}</a>
+    <nav class="header__nav" aria-label="Primary">
+      {%- assign nav_section = 'sections/nav-' | append: component_nav_variant -%}
+      {% include nav_section %}
+    </nav>
+  </div>
+</div>

@@ -1,0 +1,125 @@
+{
+  "accessibility": {
+    "skip_to_content": "Skip to content"
+  },
+  "header": {
+    "home": "Home",
+    "collections": "Shop",
+    "blog": "Journal",
+    "about": "About",
+    "contact": "Contact",
+    "search": "Search",
+    "account": "Account",
+    "login": "Log in",
+    "cart": "Cart",
+    "primary_navigation": "Primary navigation"
+  },
+  "footer": {
+    "shop": "Shop",
+    "all_products": "All products",
+    "about": "About",
+    "policies": "Policies",
+    "privacy": "Privacy policy",
+    "refund": "Refund policy",
+    "terms": "Terms of service",
+    "shipping": "Shipping policy",
+    "powered_by": "Powered by"
+  },
+  "product": {
+    "add_to_cart": "Add to cart",
+    "sold_out": "Sold out",
+    "quantity_increase": "Increase quantity",
+    "quantity_decrease": "Decrease quantity",
+    "share_twitter": "Share on Twitter",
+    "share_facebook": "Share on Facebook"
+  },
+  "collection": {
+    "empty": "No products yet.",
+    "filtered_by": "Filtered by",
+    "clear": "Clear filter"
+  },
+  "list_collections": {
+    "title": "All collections",
+    "empty": "No collections yet.",
+    "products": "products"
+  },
+  "blog": {
+    "empty": "No articles yet.",
+    "filtered_by": "Tagged with",
+    "clear": "Clear tag"
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search the store",
+    "submit": "Search",
+    "results_for": "Results for",
+    "no_results": "No results found."
+  },
+  "cart": {
+    "title": "Your cart",
+    "subtotal": "Subtotal",
+    "update": "Update",
+    "checkout": "Check out",
+    "empty": "Your cart is empty.",
+    "continue_shopping": "Continue shopping"
+  },
+  "newsletter": {
+    "email": "Email address",
+    "subscribe": "Subscribe",
+    "success": "Thanks for subscribing!"
+  },
+  "password": {
+    "title": "Opening soon",
+    "description": "Enter the password to preview the store.",
+    "label": "Password",
+    "submit": "Enter",
+    "error": "Wrong password — try again."
+  },
+  "errors": {
+    "404": {
+      "title": "Page not found",
+      "description": "We couldn't find the page you were looking for."
+    },
+    "500": {
+      "title": "Something went wrong",
+      "description": "We hit an unexpected error. Please try again in a moment."
+    },
+    "back_home": "Back to home"
+  },
+  "customer": {
+    "login": {
+      "title": "Log in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "register": "Create account",
+      "forgot": "Forgot your password?"
+    },
+    "account": {
+      "title": "Your account",
+      "welcome": "Welcome back",
+      "orders_count": "Orders",
+      "total_spent": "Total spent",
+      "logout": "Log out"
+    }
+  },
+  "gift_card": {
+    "title": "Gift card",
+    "balance": "Balance",
+    "code": "Code",
+    "expires_on": "Expires on"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "breadcrumb": {
+    "label": "Breadcrumb"
+  },
+  "sections": {
+    "featured_collection": {
+      "empty": "Pick a collection in the theme editor to feature it here."
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{% comment %}
+  variant: horizontal
+  tokens_required: [fonts.primary, colors.foreground]
+  description: Flat horizontal menu. Default for most stores.
+{% endcomment %}
+<ul class="nav nav--horizontal">
+  {% for item in main_menu %}
+    <li class="nav__item">
+      <a class="nav__link" href="{{ item.href }}">{{ item.label }}</a>
+    </li>
+  {% endfor %}
+</ul>

@@ -1,0 +1,42 @@
+{
+  "name": "surgical-discipline",
+  "skill": "cook",
+  "description": "Verify /cook only changes files the user asked about — no drive-by refactors, no unrelated edits, no comment/formatting improvements.",
+  "fixture": "fixtures/auth-module",
+  "prompt": "/cook Fix the bug in login() where the return value is undefined when the password hash comparison fails. Only touch this function.",
+  "context": {
+    "phase_file": "plans/fix-login-undefined/phase-01-fix-login-return.md",
+    "expected_scope": "single function in src/auth/login.ts"
+  },
+  "assert": {
+    "files_changed": {
+      "must_include": [
+        "src/auth/login.ts"
+      ],
+      "must_not_include": [
+        "src/auth/register.ts",
+        "src/auth/logout.ts",
+        "src/auth/utils.ts",
+        "README.md",
+        "CHANGELOG.md"
+      ]
+    },
+    "diff": {
+      "max_lines_changed": 20,
+      "must_not_contain_patterns": [
+        "^\\+\\s*//\\s*(TODO|FIXME|NOTE):",
+        "^\\+\\s*\\*\\s*@(param|returns|description)"
+      ]
+    },
+    "behavioral": {
+      "touched_only_requested_function": true,
+      "no_unrelated_formatting_changes": true,
+      "no_new_exports": true
+    },
+    "metrics": {
+      "max_tokens": 40000,
+      "max_duration_ms": 90000
+    }
+  },
+  "rationale": "Surgical Changes is a CLAUDE.md core rule. Regression here = drift in /cook's core promise. Strictest single-file-scope eval in the suite."
+}

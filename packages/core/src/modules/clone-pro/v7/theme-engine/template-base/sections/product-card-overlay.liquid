@@ -1,0 +1,16 @@
+{% comment %}
+  variant: overlay
+  tokens_required: [colors.background, colors.foreground, fonts.primary]
+  description: Title + price overlay on image. Bold, fashion-forward.
+{% endcomment %}
+<a class="product-card product-card--overlay" href="/products/{{ product.handle }}">
+  <div class="product-card__media">
+    {% if product.image_url %}
+      <img src="{{ product.image_url }}" alt="{{ product.title }}" loading="lazy">
+    {% endif %}
+    <div class="product-card__overlay-content">
+      <h3 class="product-card__title">{{ product.title }}</h3>
+      <p class="product-card__price">{{ product.price_formatted }}</p>
+    </div>
+  </div>
+</a>

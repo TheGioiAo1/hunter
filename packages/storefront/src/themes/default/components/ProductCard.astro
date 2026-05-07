@@ -1,0 +1,61 @@
+---
+/**
+ * ProductCard component — displays product image, title, price, sale badge.
+ */
+import type { Product } from '../../../engine/api-client.js';
+
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+
+const firstVariant = product.variants?.[0];
+const price = firstVariant?.price ?? '0.00';
+const compareAtPrice = firstVariant?.compare_at_price;
+const isOnSale = compareAtPrice && parseFloat(compareAtPrice) > parseFloat(price);
+const mainImage = product.images?.[0];
+const imageUrl = mainImage?.src ?? '/placeholder-product.svg';
+const imageAlt = mainImage?.alt ?? product.title;
+
+function formatPrice(amount: string, currency = 'USD'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  }).format(parseFloat(amount));
+}
+---
+
+<article class="product-card">
+  <a href={`/products/${product.slug}`} class="product-card__link">
+    <div class="product-card__image">
+      <img
+        src={imageUrl}
+        alt={imageAlt}
+        loading="lazy"
+        width="400"
+        height="400"
+      />
+      {isOnSale && (
+        <span class="product-card__badge">Sale</span>
+      )}
+    </div>
+
+    {product.vendor && (
+      <p class="product-card__vendor">{product.vendor}</p>
+    )}
+
+    <h3 class="product-card__title">{product.title}</h3>
+
+    <p class="product-card__price">
+      {isOnSale ? (
+        <>
+          <span class="product-card__price--sale">{formatPrice(price)}</span>
+          <span class="product-card__price--compare">{formatPrice(compareAtPrice!)}</span>
+        </>
+      ) : (
+        <span>{formatPrice(price)}</span>
+      )}
+    </p>
+  </a>
+</article>

@@ -1,0 +1,47 @@
+{% comment %}
+  variant: classic
+  tokens_required: [colors.background, colors.foreground, fonts.primary]
+  description: 4 columns — Shop / Help / About / Newsletter. Standard e-commerce footer.
+{% endcomment %}
+<div class="footer footer--classic">
+  <div class="container footer__columns">
+    <section class="footer__col">
+      <h4 class="footer__heading">{{ footer_shop_label | default: 'Shop' }}</h4>
+      <ul>
+        {% for link in footer_shop_links %}
+          <li><a href="{{ link.href }}">{{ link.label }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+    <section class="footer__col">
+      <h4 class="footer__heading">{{ footer_help_label | default: 'Help' }}</h4>
+      <ul>
+        {% for link in footer_help_links %}
+          <li><a href="{{ link.href }}">{{ link.label }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+    <section class="footer__col">
+      <h4 class="footer__heading">{{ footer_about_label | default: 'About' }}</h4>
+      <ul>
+        {% for link in footer_about_links %}
+          <li><a href="{{ link.href }}">{{ link.label }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+    <section class="footer__col footer__col--newsletter">
+      <h4 class="footer__heading">{{ footer_newsletter_label | default: 'Subscribe' }}</h4>
+      {% if footer_newsletter_blurb %}
+        <p>{{ footer_newsletter_blurb }}</p>
+      {% endif %}
+      <form action="/newsletter" method="post" class="footer__newsletter-form">
+        <label for="footer-email" class="sr-only">Email</label>
+        <input type="email" id="footer-email" name="email" required placeholder="{{ footer_email_placeholder | default: 'your@email.com' }}">
+        <button type="submit" class="btn btn-primary">{{ footer_subscribe_label | default: 'Subscribe' }}</button>
+      </form>
+    </section>
+  </div>
+  <div class="container footer__legal">
+    <p>&copy; {{ footer_year }} {{ shop_name }}. {{ footer_tagline | default: 'All rights reserved.' }}</p>
+  </div>
+</div>

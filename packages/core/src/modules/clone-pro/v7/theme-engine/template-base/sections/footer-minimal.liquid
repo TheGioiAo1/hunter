@@ -1,0 +1,18 @@
+{% comment %}
+  variant: minimal
+  tokens_required: [colors.background, colors.foreground]
+  description: Single row — logo + copyright + small social row. Modern minimal sites.
+{% endcomment %}
+<div class="footer footer--minimal">
+  <div class="container footer__minimal">
+    <a class="footer__logo" href="/">{{ shop_name }}</a>
+    <p class="footer__copyright">&copy; {{ footer_year }} {{ shop_name }}</p>
+    {% if footer_social_links %}
+      <ul class="footer__social">
+        {% for link in footer_social_links %}
+          <li><a href="{{ link.href }}" aria-label="{{ link.label }}">{{ link.label }}</a></li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</div>

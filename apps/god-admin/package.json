@@ -1,0 +1,24 @@
+{
+  "name": "@gbox/god-admin",
+  "version": "4.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "node --import tsx src/server.ts"
+  },
+  "dependencies": {
+    "@gbox/agent-core": "file:../../packages/agent-core",
+    "express": "^4.21.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.0",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/qrcode": "^1.5.5",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}

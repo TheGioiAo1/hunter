@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "paths": {
+      "@gbox/core": ["./packages/core/src"],
+      "@gbox/core/*": ["./packages/core/src/*"],
+      "@gbox/api": ["./packages/api/src"],
+      "@gbox/api/*": ["./packages/api/src/*"],
+      "@gbox/api-client": ["./packages/api-client/src"],
+      "@gbox/api-client/*": ["./packages/api-client/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}

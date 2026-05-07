@@ -1,0 +1,16 @@
+{% comment %}
+  variant: minimal
+  tokens_required: [colors.foreground]
+  description: Image only — title appears on hover. For galleries / image-led brands.
+{% endcomment %}
+<a class="product-card product-card--minimal" href="/products/{{ product.handle }}" aria-label="{{ product.title }}">
+  <div class="product-card__media">
+    {% if product.image_url %}
+      <img src="{{ product.image_url }}" alt="{{ product.title }}" loading="lazy">
+    {% endif %}
+  </div>
+  <div class="product-card__hover">
+    <h3 class="product-card__title">{{ product.title }}</h3>
+    <p class="product-card__price">{{ product.price_formatted }}</p>
+  </div>
+</a>

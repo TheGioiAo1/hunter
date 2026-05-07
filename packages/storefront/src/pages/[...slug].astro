@@ -1,0 +1,9 @@
+---
+/**
+ * Route: catch-all for CMS pages (e.g., /about, /pages/contact)
+ * Delegates to the default theme's CMS page handler.
+ */
+import CmsPage from '../themes/default/pages/[...slug].astro';
+---
+
+<CmsPage />

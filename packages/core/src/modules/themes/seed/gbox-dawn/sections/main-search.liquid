@@ -1,0 +1,37 @@
+<section class="search page-width">
+  <header class="search__header">
+    <h1>{{ 'search.title' | t }}</h1>
+    <form action="/search" method="get" role="search" class="search__form">
+      <label class="visually-hidden" for="search-input">{{ 'search.placeholder' | t }}</label>
+      <input id="search-input" type="search" name="q" value="{{ search.terms | escape }}" placeholder="{{ 'search.placeholder' | t }}">
+      <button type="submit" class="button button--primary">{{ 'search.submit' | t }}</button>
+    </form>
+  </header>
+
+  {%- if search.performed -%}
+    <p class="search__count">{{ 'search.results_for' | t }} <strong>{{ search.terms }}</strong>: {{ search.results_count }}</p>
+
+    {%- if search.results and search.results.size > 0 -%}
+      {% paginate search.results by 24 %}
+        <ul class="search__results">
+          {%- for item in search.results -%}
+            <li class="search__result">
+              <a href="{{ item.url }}"><strong>{{ item.title }}</strong></a>
+              {%- if item.excerpt -%}<p>{{ item.excerpt }}</p>{%- endif -%}
+            </li>
+          {%- endfor -%}
+        </ul>
+        {% render 'pagination', paginate: paginate %}
+      {% endpaginate %}
+    {%- else -%}
+      <p>{{ 'search.no_results' | t }}</p>
+    {%- endif -%}
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "t:sections.main_search.name",
+  "settings": []
+}
+{% endschema %}

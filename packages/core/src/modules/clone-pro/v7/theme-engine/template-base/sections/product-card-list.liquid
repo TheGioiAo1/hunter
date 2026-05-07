@@ -1,0 +1,19 @@
+{% comment %}
+  variant: list
+  tokens_required: [colors.foreground, fonts.primary]
+  description: Horizontal layout — image left, content right. Suits content-heavy products (books, courses).
+{% endcomment %}
+<a class="product-card product-card--list" href="/products/{{ product.handle }}">
+  <div class="product-card__media">
+    {% if product.image_url %}
+      <img src="{{ product.image_url }}" alt="{{ product.title }}" loading="lazy">
+    {% endif %}
+  </div>
+  <div class="product-card__meta">
+    <h3 class="product-card__title">{{ product.title }}</h3>
+    {% if product.description_short %}
+      <p class="product-card__excerpt">{{ product.description_short }}</p>
+    {% endif %}
+    <p class="product-card__price">{{ product.price_formatted }}</p>
+  </div>
+</a>

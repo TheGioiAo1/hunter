@@ -1,0 +1,69 @@
+{% comment %} Product Detail Page {% endcomment %}
+
+<section class="product-page">
+  <div class="container">
+    <div class="product-layout">
+      <div class="product-gallery">
+        {% if product.images.size > 0 %}
+          <div class="gallery-main">
+            <img src="{{ product.featured_image | img_url: 'large' }}" alt="{{ product.featured_image.alt | default: product.title }}" class="product-main-image" id="product-main-image">
+          </div>
+          {% if product.images.size > 1 %}
+            <div class="gallery-thumbs">
+              {% for image in product.images %}
+                <button class="thumb{% if forloop.first %} active{% endif %}" data-image="{{ image | img_url: 'large' }}">
+                  <img src="{{ image | img_url: 'compact' }}" alt="{{ image.alt | default: product.title }}" loading="lazy">
+                </button>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endif %}
+      </div>
+
+      <div class="product-info">
+        {% if product.vendor %}<p class="product-vendor">{{ product.vendor }}</p>{% endif %}
+        <h1 class="product-title">{{ product.title }}</h1>
+
+        <div class="product-price">
+          {% if product.compare_at_price > product.price %}
+            <span class="price-sale">{{ product.price | money }}</span>
+            <span class="price-compare">{{ product.compare_at_price | money }}</span>
+          {% else %}
+            <span class="price-regular">{{ product.price | money }}</span>
+          {% endif %}
+        </div>
+
+        <form action="/cart/add" method="post" class="product-form">
+          {% if product.has_only_default_variant == false %}
+            {% for option in product.options_with_values %}
+              <div class="product-option">
+                <label for="option-{{ option.name | handleize }}">{{ option.name }}</label>
+                <select name="options[{{ option.name }}]" id="option-{{ option.name | handleize }}">
+                  {% for value in option.values %}
+                    <option value="{{ value }}">{{ value }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <div class="product-quantity">
+            <label for="quantity">Quantity</label>
+            <input type="number" id="quantity" name="quantity" value="1" min="1" max="99">
+          </div>
+
+          <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+          <button type="submit" class="btn add-to-cart"{% unless product.available %} disabled{% endunless %}>
+            {% if product.available %}Add to Cart{% else %}Sold Out{% endif %}
+          </button>
+        </form>
+
+        {% if product.description != blank %}
+          <div class="product-description rte">
+            {{ product.description }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>

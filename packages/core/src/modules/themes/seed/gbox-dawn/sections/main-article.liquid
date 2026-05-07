@@ -1,0 +1,25 @@
+<article class="article page-width page-width--narrow">
+  <header class="article__header">
+    {%- if blog -%}
+      <p class="article__breadcrumb"><a href="/blogs/{{ blog.handle }}">{{ blog.title }}</a></p>
+    {%- endif -%}
+    <h1>{{ article.title }}</h1>
+    <p class="article__meta">
+      {%- if article.author -%}<span>{{ article.author }}</span>{%- endif -%}
+      {%- if article.published_at -%}
+        · <time datetime="{{ article.published_at }}">{{ article.published_at | date: '%B %-d, %Y' }}</time>
+      {%- endif -%}
+    </p>
+  </header>
+
+  <div class="article__content rte">
+    {{ article.content }}
+  </div>
+</article>
+
+{% schema %}
+{
+  "name": "t:sections.main_article.name",
+  "settings": []
+}
+{% endschema %}

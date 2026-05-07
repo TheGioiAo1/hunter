@@ -1,0 +1,40 @@
+<section class="blog page-width">
+  <header class="blog__header">
+    <h1>{{ blog.title }}</h1>
+    {%- if blog.current_tag -%}
+      <p>{{ 'blog.filtered_by' | t }}: <strong>{{ blog.current_tag }}</strong> · <a href="/blogs/{{ blog.handle }}">{{ 'blog.clear' | t }}</a></p>
+    {%- endif -%}
+  </header>
+
+  {%- if articles and articles.size > 0 -%}
+    {% paginate articles by 12 %}
+      <ul class="article-grid">
+        {%- for article in articles -%}
+          <li class="article-card">
+            <a href="{{ article.url | default: '/blogs/' | append: blog.handle | append: '/' | append: article.handle }}">
+              <h2>{{ article.title }}</h2>
+              {%- if article.published_at -%}
+                <time datetime="{{ article.published_at }}">{{ article.published_at | date: '%B %-d, %Y' }}</time>
+              {%- endif -%}
+              {%- if article.excerpt -%}
+                <p>{{ article.excerpt }}</p>
+              {%- elsif article.content -%}
+                <p>{{ article.content | strip_html | truncate: 180 }}</p>
+              {%- endif -%}
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+      {% render 'pagination', paginate: paginate %}
+    {% endpaginate %}
+  {%- else -%}
+    <p>{{ 'blog.empty' | t }}</p>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "t:sections.main_blog.name",
+  "settings": []
+}
+{% endschema %}

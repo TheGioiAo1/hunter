@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="{{ shop_locale | default: 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page_title | default: shop_name }}</title>
+  {% if font_primary_url %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="{{ font_primary_url }}">
+  {% endif %}
+  <link rel="stylesheet" href="/assets/theme.css">
+</head>
+<body class="page-{{ template | default: 'index' }}">
+  {% include 'snippets/header' %}
+  <main class="site-main" role="main">
+    {{ content_for_layout }}
+  </main>
+  {% include 'snippets/footer' %}
+  <script src="/assets/theme.js" defer></script>
+</body>
+</html>

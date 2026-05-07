@@ -1,0 +1,52 @@
+# Gbox Platform — CDN Edge Worker
+#
+# Deployed to the `cdn.gbox.co` + `download.gbox.co` zones.
+# See apps/cdn-worker/src/index.ts for the handler code.
+#
+# Deploy: wrangler deploy --env production
+#
+# Secrets (set once per environment):
+#   wrangler secret put DOWNLOAD_JWT_SECRET --env production
+#   wrangler secret put DOWNLOAD_SIGN_URL   --env production
+#   wrangler secret put DOWNLOAD_SIGN_TOKEN --env production
+
+name = "gbox-cdn-edge"
+main = "src/index.ts"
+compatibility_date = "2026-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Default (dev) deployment — points at staging zones so accidental
+# `wrangler deploy` without --env doesn't hit prod.
+workers_dev = true
+
+# -----------------------------------------------------------------------
+# Production — cdn.gbox.co + download.gbox.co
+# -----------------------------------------------------------------------
+[env.production]
+name = "gbox-cdn-edge-prod"
+
+[[env.production.routes]]
+pattern = "cdn.gbox.co/*"
+zone_name = "gbox.co"
+
+[[env.production.routes]]
+pattern = "download.gbox.co/*"
+zone_name = "gbox.co"
+
+# -----------------------------------------------------------------------
+# Staging — uses the same zone with a `.staging.` host prefix; the zone
+# has a separate DNS record for cdn-staging.gbox.co pointing here. Kept
+# as a template even if unused, so we have a canary target.
+# -----------------------------------------------------------------------
+[env.staging]
+name = "gbox-cdn-edge-staging"
+
+[[env.staging.routes]]
+pattern = "cdn-staging.gbox.co/*"
+zone_name = "gbox.co"
+
+# Observability — ship structured logs to the Cloudflare dashboard so
+# Thai can tail them from the Workers UI without a separate stack.
+[observability]
+enabled = true
+head_sampling_rate = 1.0

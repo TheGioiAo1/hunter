@@ -1,0 +1,44 @@
+{
+  "name": "scope-challenge",
+  "skill": "plan",
+  "description": "Verify /plan performs Scope Challenge (step 3) — pushes back on over-scoped requests instead of silently decomposing everything the user mentioned.",
+  "fixture": "fixtures/greenfield-app",
+  "prompt": "/plan Add dark mode toggle. Also refactor the whole theming system, rewrite the color token pipeline, migrate Tailwind to CSS variables, and add i18n while we're at it.",
+  "context": {
+    "user_stated_goal": "dark mode toggle",
+    "drive_by_additions": [
+      "refactor theming system",
+      "rewrite color token pipeline",
+      "migrate Tailwind to CSS variables",
+      "add i18n"
+    ]
+  },
+  "assert": {
+    "behavioral": {
+      "scope_challenge_raised": true,
+      "pushback_on_drive_bys": true,
+      "asked_user_to_narrow_scope": true
+    },
+    "plan_artifacts": {
+      "must_contain_section": "## Scope Challenge",
+      "must_defer_items": [
+        "refactor theming system",
+        "rewrite color token pipeline",
+        "migrate Tailwind to CSS variables",
+        "add i18n"
+      ]
+    },
+    "phase_count": {
+      "max": 3,
+      "reason": "A dark mode toggle should not expand into a 10-phase mega-plan"
+    },
+    "reuse_scout": {
+      "spawned_after_scope_challenge": true
+    },
+    "metrics": {
+      "max_tokens": 50000,
+      "max_duration_ms": 150000
+    }
+  },
+  "rationale": "Scope Challenge is the first quality gate in /plan. If it doesn't trigger on an obviously over-scoped request, the rule has drifted. This eval is a canary for planner discipline."
+}

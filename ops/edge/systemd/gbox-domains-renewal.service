@@ -1,0 +1,57 @@
+# Gbox Platform — Let's Encrypt Renewal Service
+# (Landing Page System Phase 1D, decision D8)
+#
+# Install at /etc/systemd/system/gbox-domains-renewal.service.
+# One-shot unit invoked by the matching .timer unit every day at
+# 03:00 UTC. Runs `scripts/ops/domains-renewal-loop.ts` which walks
+# shop_domains, finds every cert with < 30 days remaining, and
+# asks lego to renew.
+#
+# Exits 0 on success (nothing to do counts as success).
+# Exits 1 on unhandled error — systemd marks the unit failed and
+# the next timer tick retries without further intervention.
+#
+# Adjust `WorkingDirectory`, `EnvironmentFile`, and `ExecStart` for
+# your deployment layout. Defaults assume the platform is checked
+# out at /srv/gbox-platform and node/pnpm are on PATH for the
+# gbox-edge user.
+
+[Unit]
+Description=Gbox Platform Let's Encrypt renewal batch
+After=network-online.target
+Wants=network-online.target
+# Don't run if the main worker is down — we rely on shared env.
+# Timer skips the run when the service can't start.
+
+[Service]
+Type=oneshot
+User=gbox-edge
+Group=gbox-edge
+WorkingDirectory=/srv/gbox-platform/gbox-platform
+EnvironmentFile=/etc/gbox/edge.env
+ExecStart=/usr/bin/npx tsx scripts/ops/domains-renewal-loop.ts
+
+# Guardrails — one run must never hang forever. 15 minutes is more
+# than enough for a full batch even on a big fleet (lego spawns per
+# cert and most renewals are no-ops).
+TimeoutStartSec=900
+
+# Logging: systemd captures stdout/stderr and forwards to journald.
+# The script emits one-JSON-per-line structured logs that play
+# nicely with `journalctl -u gbox-domains-renewal.service -o cat`.
+StandardOutput=journal
+StandardError=journal
+
+# Filesystem hardening — the renewer only needs to read our env,
+# spawn lego, and write to /etc/gbox/lego + /etc/nginx/gbox-domains.
+ProtectSystem=full
+ReadWritePaths=/etc/gbox/lego /etc/nginx/gbox-domains /var/log/gbox
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+
+[Install]
+WantedBy=multi-user.target

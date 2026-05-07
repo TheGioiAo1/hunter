@@ -1,0 +1,30 @@
+<section class="newsletter page-width">
+  <div class="newsletter__inner">
+    <h2>{{ section.settings.heading }}</h2>
+    {%- if section.settings.subheading != blank -%}
+      <p>{{ section.settings.subheading }}</p>
+    {%- endif -%}
+
+    {% form 'customer' %}
+      <label class="visually-hidden" for="newsletter-email">{{ 'newsletter.email' | t }}</label>
+      <input id="newsletter-email" type="email" name="contact[email]" placeholder="{{ 'newsletter.email' | t }}" required>
+      <button type="submit" class="button button--primary">{{ 'newsletter.subscribe' | t }}</button>
+      {%- if form.posted_successfully? -%}
+        <p class="form__status form__status--success">{{ 'newsletter.success' | t }}</p>
+      {%- endif -%}
+    {% endform %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "t:sections.newsletter.name",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "t:sections.newsletter.settings.heading.label", "default": "Subscribe" },
+    { "type": "text", "id": "subheading", "label": "t:sections.newsletter.settings.subheading.label" }
+  ],
+  "presets": [
+    { "name": "t:sections.newsletter.presets.default.name", "category": "Promotional" }
+  ]
+}
+{% endschema %}

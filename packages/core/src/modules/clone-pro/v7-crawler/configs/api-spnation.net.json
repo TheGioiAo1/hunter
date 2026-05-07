@@ -1,0 +1,30 @@
+﻿{
+	"xpath":'"value":"(.*?)","url":"(.*?)","img":"(.*?)"',
+	"items":[
+		{
+			"name":"title",
+			"group_index":1,
+			"replaces":[
+				{
+					"from":"\\",
+					"to":""
+				}
+			]
+		},
+		{
+			"name":"image",
+			"group_index":3,
+			"replaces":[
+				{
+					"from":"\\",
+					"to":""
+				},
+				{
+					"from":'-280x280',
+					"to":""
+				}
+			]
+		}
+	]
+
+}

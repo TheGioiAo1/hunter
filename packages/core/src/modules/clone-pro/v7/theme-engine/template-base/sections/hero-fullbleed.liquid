@@ -1,0 +1,21 @@
+{% comment %}
+  variant: fullbleed-image
+  tokens_required: [colors.primary, colors.foreground, fonts.primary, layout.container_max_width]
+  description: Full-width hero with overlay text. Suitable for image-led brands.
+{% endcomment %}
+<div class="hero hero--fullbleed">
+  {% if hero.image_url %}
+    <img class="hero__bg" src="{{ hero.image_url }}" alt="{{ hero.image_alt | default: hero.headline }}" loading="eager">
+  {% endif %}
+  <div class="hero__overlay">
+    <div class="container">
+      <h1 class="hero__headline">{{ hero.headline }}</h1>
+      {% if hero.subhead %}
+        <p class="hero__subhead">{{ hero.subhead }}</p>
+      {% endif %}
+      {% if hero.cta_label and hero.cta_href %}
+        <a class="btn btn-primary" href="{{ hero.cta_href }}">{{ hero.cta_label }}</a>
+      {% endif %}
+    </div>
+  </div>
+</div>

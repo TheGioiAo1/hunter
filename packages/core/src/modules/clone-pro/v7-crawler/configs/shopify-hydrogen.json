@@ -1,0 +1,64 @@
+{
+  "delay": 2000,
+  "item": {
+    "xpath": "//div[@data-testid='product-card' or contains(@class,'product-card') or contains(@class,'ProductCard')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//h3 | .//h2 | .//*[contains(@class,'product-title') or contains(@class,'ProductTitle')]",
+        "attr": null,
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//img[@src] | .//img[@srcset]",
+        "attr": "src",
+        "replaces": [
+          { "from": "?width=", "to": "?w=" }
+        ]
+      },
+      {
+        "name": "Link",
+        "xpath": ".//a[contains(@href,'/products/')]",
+        "attr": "href",
+        "replaces": null
+      },
+      {
+        "name": "Price",
+        "xpath": ".//*[contains(@class,'price') or @data-testid='price']",
+        "attr": null,
+        "replaces": [
+          { "from": "$", "to": "" },
+          { "from": "USD", "to": "" },
+          { "from": ",", "to": "" }
+        ]
+      },
+      {
+        "name": "OldPrice",
+        "xpath": ".//s | .//*[contains(@class,'compare') or contains(@class,'CompareAt')]",
+        "attr": null,
+        "replaces": [
+          { "from": "$", "to": "" },
+          { "from": "USD", "to": "" },
+          { "from": ",", "to": "" }
+        ]
+      },
+      {
+        "name": "Description",
+        "xpath": "//div[contains(@class,'product-description') or contains(@class,'ProductDescription') or @data-testid='product-description'] | //meta[@property='og:description']",
+        "attr": null,
+        "replaces": null
+      },
+      {
+        "name": "Variants",
+        "xpath": "//fieldset//label | //div[contains(@class,'variant') or contains(@class,'Variant')]//button"
+      }
+    ],
+    "images_in_detail": {
+      "name": "GalleryImages",
+      "xpath": "//div[contains(@class,'product-gallery') or contains(@class,'product-images') or contains(@class,'ProductMedia')]//img | //meta[@property='og:image']",
+      "attr": "src",
+      "replaces": null
+    }
+  }
+}

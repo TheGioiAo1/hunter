@@ -1,0 +1,53 @@
+<footer class="site-footer" role="contentinfo">
+  <div class="page-width site-footer__inner">
+    <div class="site-footer__col">
+      <h2 class="site-footer__heading">{{ shop.name }}</h2>
+      <p>{{ section.settings.tagline | default: shop.description }}</p>
+    </div>
+
+    <div class="site-footer__col">
+      <h2 class="site-footer__heading">{{ 'footer.shop' | t }}</h2>
+      <ul>
+        <li><a href="/collections">{{ 'header.collections' | t }}</a></li>
+        <li><a href="/products">{{ 'footer.all_products' | t }}</a></li>
+        <li><a href="/cart">{{ 'header.cart' | t }}</a></li>
+      </ul>
+    </div>
+
+    <div class="site-footer__col">
+      <h2 class="site-footer__heading">{{ 'footer.about' | t }}</h2>
+      <ul>
+        <li><a href="/pages/about">{{ 'header.about' | t }}</a></li>
+        <li><a href="/pages/contact">{{ 'header.contact' | t }}</a></li>
+        <li><a href="/blogs/news">{{ 'header.blog' | t }}</a></li>
+      </ul>
+    </div>
+
+    <div class="site-footer__col">
+      <h2 class="site-footer__heading">{{ 'footer.policies' | t }}</h2>
+      <ul>
+        <li><a href="/policies/privacy-policy">{{ 'footer.privacy' | t }}</a></li>
+        <li><a href="/policies/refund-policy">{{ 'footer.refund' | t }}</a></li>
+        <li><a href="/policies/terms-of-service">{{ 'footer.terms' | t }}</a></li>
+        <li><a href="/policies/shipping-policy">{{ 'footer.shipping' | t }}</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="site-footer__legal page-width">
+    <small>&copy; {{ 'now' | date: '%Y' }} {{ shop.name }}. {{ 'footer.powered_by' | t }} Gbox.</small>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "t:sections.footer.name",
+  "settings": [
+    {
+      "type": "text",
+      "id": "tagline",
+      "label": "t:sections.footer.settings.tagline.label"
+    }
+  ]
+}
+{% endschema %}

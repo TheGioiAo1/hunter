@@ -1,0 +1,54 @@
+{% comment %} Homepage — Featured Collections + Products {% endcomment %}
+
+{% comment %} Hero Section — show first collection image or shop branding {% endcomment %}
+<section class="hero-section">
+  <div class="hero-slide active">
+    <div class="hero-overlay">
+      <div class="container">
+        <h1 class="hero-heading">{{ shop.name }}</h1>
+        <p class="hero-subheading">{{ shop.description }}</p>
+        <a href="/collections" class="btn hero-cta">Shop Now</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% comment %} Featured Collections {% endcomment %}
+{% assign collection_count = 0 %}
+{% for col_pair in collections %}
+  {% assign collection_count = collection_count | plus: 1 %}
+{% endfor %}
+
+{% if collection_count > 0 %}
+<section class="featured-collections">
+  <div class="container">
+    <h2 class="section-title">Shop by Category</h2>
+    <div class="collection-grid">
+      {% for col_pair in collections limit: 6 %}
+        {% assign col = col_pair[1] %}
+        <a href="/collections/{{ col.handle }}" class="collection-card">
+          {% if col.image %}
+            <img src="{{ col.image.src }}" alt="{{ col.title }}" class="collection-image" loading="lazy">
+          {% endif %}
+          <h3 class="collection-name">{{ col.title }}</h3>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% comment %} Featured Products — grab products from any available collection {% endcomment %}
+<section class="featured-products">
+  <div class="container">
+    <h2 class="section-title">Featured Products</h2>
+    <div class="product-grid">
+      {% for col_pair in collections limit: 1 %}
+        {% assign col = col_pair[1] %}
+        {% for product in col.products limit: 8 %}
+          {% render 'product-card', product: product %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</section>

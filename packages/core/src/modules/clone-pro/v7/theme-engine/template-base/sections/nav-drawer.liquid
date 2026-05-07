@@ -1,0 +1,20 @@
+{% comment %}
+  variant: drawer
+  tokens_required: [fonts.primary, colors.background, colors.foreground]
+  description: Hamburger button + slide-in drawer. Mobile-first / minimalist desktops.
+{% endcomment %}
+<div class="nav nav--drawer">
+  <button class="nav__trigger" aria-controls="nav-drawer" aria-expanded="false" type="button">
+    <span class="sr-only">{{ nav_drawer_label | default: 'Menu' }}</span>
+    <span class="nav__hamburger" aria-hidden="true"></span>
+  </button>
+  <aside id="nav-drawer" class="nav__drawer" hidden>
+    <ul class="nav__drawer-list">
+      {% for item in main_menu %}
+        <li class="nav__drawer-item">
+          <a href="{{ item.href }}">{{ item.label }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  </aside>
+</div>

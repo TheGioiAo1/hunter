@@ -1,0 +1,31 @@
+﻿{
+  "delay": 1000,
+  "item": {
+    "xpath": "//div[contains(@class, 'grid__item large--one-quarter')]",
+    "elements": [
+      {
+        "name": "Title",
+         "xpath": ".//a[contains(@class, 'grid__image')]/img",
+        "attr": "alt",
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//a[contains(@class, 'grid__image')]/img",
+        "attr": "src",
+        "replaces": [
+			
+			{
+				"from":"//cdn.shopify.com",
+				"to":"https://cdn.shopify.com"
+			},
+			{
+				"from":"_300x",
+				"to":""
+			}
+		]
+      }
+      
+    ]
+  } 
+}

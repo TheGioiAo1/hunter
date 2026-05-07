@@ -1,0 +1,25 @@
+{% comment %}
+  variant: editorial
+  tokens_required: [fonts.primary, colors.foreground, colors.background, layout.container_max_width]
+  description: Big serif headline, generous whitespace, minimal image. For literary / bookish brands like bibliobloom.
+{% endcomment %}
+<div class="hero hero--editorial">
+  <div class="container hero__editorial">
+    <p class="hero__eyebrow">{{ hero.eyebrow | default: hero.subhead }}</p>
+    <h1 class="hero__headline hero__headline--serif">{{ hero.headline }}</h1>
+    {% if hero.body_html %}
+      <div class="hero__body">{{ hero.body_html }}</div>
+    {% endif %}
+    {% if hero.cta_label and hero.cta_href %}
+      <a class="btn btn-link hero__cta" href="{{ hero.cta_href }}">{{ hero.cta_label }} &rarr;</a>
+    {% endif %}
+    {% if hero.image_url %}
+      <figure class="hero__figure">
+        <img src="{{ hero.image_url }}" alt="{{ hero.image_alt | default: hero.headline }}" loading="eager">
+        {% if hero.figure_caption %}
+          <figcaption>{{ hero.figure_caption }}</figcaption>
+        {% endif %}
+      </figure>
+    {% endif %}
+  </div>
+</div>

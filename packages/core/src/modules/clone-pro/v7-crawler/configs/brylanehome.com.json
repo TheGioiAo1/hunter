@@ -1,0 +1,25 @@
+﻿{
+  "delay": 1000,
+  "item": {
+    "xpath": "//li[contains(@class, 'productTile   squareTile')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//a[contains(@class, 'link text-black name-link d-block stretched-link')]",
+        "attr": null,
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//picture[contains(@class, 'tile-image-picture')]/source",
+        "attr": "data-srcset",
+        "replaces": [
+			{	
+				"from":"?colorid=4245709&sw=480&sh=692&sm=fit&yocs=1i_1l_",
+				"to":""
+			}
+		]
+      }
+    ]
+  } 
+}

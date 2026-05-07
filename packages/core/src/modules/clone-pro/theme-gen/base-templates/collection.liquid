@@ -1,0 +1,43 @@
+{% comment %} Collection Page — Product Grid with Filters {% endcomment %}
+
+<section class="collection-page">
+  <div class="container">
+    <div class="collection-header">
+      {% if collection.image %}
+        <div class="collection-hero">
+          <img src="{{ collection.image.src }}" alt="{{ collection.title }}" class="collection-hero-image" loading="eager">
+        </div>
+      {% endif %}
+      <h1 class="collection-title">{{ collection.title }}</h1>
+      {% if collection.description != blank %}
+        <div class="collection-description rte">{{ collection.description }}</div>
+      {% endif %}
+    </div>
+
+    <div class="collection-controls">
+      <p class="product-count">{{ collection.products_count }} products</p>
+      <div class="sort-by">
+        <label for="sort">Sort by:</label>
+        <select id="sort" name="sort_by">
+          <option value="manual">Featured</option>
+          <option value="best-selling">Best Selling</option>
+          <option value="title-ascending">A-Z</option>
+          <option value="title-descending">Z-A</option>
+          <option value="price-ascending">Price: Low to High</option>
+          <option value="price-descending">Price: High to Low</option>
+          <option value="created-descending">Newest</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="product-grid">
+      {% for product in products %}
+        {% render 'product-card', product: product %}
+      {% else %}
+        <p class="no-products">No products found in this collection.</p>
+      {% endfor %}
+    </div>
+
+    {% comment %} Pagination placeholder {% endcomment %}
+  </div>
+</section>

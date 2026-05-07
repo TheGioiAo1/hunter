@@ -1,0 +1,55 @@
+{% comment %}
+  Customer Registration Template
+  Renders a registration form for new customer accounts.
+{% endcomment %}
+
+<div class="customer-register page-width" style="max-width:480px;margin:60px auto;padding:0 20px">
+  <h1 style="text-align:center;margin-bottom:8px">Create Account</h1>
+  <p style="text-align:center;color:#666;margin-bottom:32px">Join us and start shopping today</p>
+
+  {% if form.errors %}
+    <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px 16px;margin-bottom:20px;color:#dc2626;font-size:14px">
+      {{ form.errors | default_errors }}
+    </div>
+  {% endif %}
+
+  {% form 'create_customer' %}
+    <div style="margin-bottom:16px">
+      <label for="FirstName" style="display:block;font-size:14px;font-weight:500;margin-bottom:4px">First name</label>
+      <input type="text" name="customer[first_name]" id="FirstName" autocomplete="given-name"
+        style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px"
+        placeholder="First name" value="{{ form.first_name }}">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label for="LastName" style="display:block;font-size:14px;font-weight:500;margin-bottom:4px">Last name</label>
+      <input type="text" name="customer[last_name]" id="LastName" autocomplete="family-name"
+        style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px"
+        placeholder="Last name" value="{{ form.last_name }}">
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label for="Email" style="display:block;font-size:14px;font-weight:500;margin-bottom:4px">Email *</label>
+      <input type="email" name="customer[email]" id="Email" autocomplete="email" required
+        style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px"
+        placeholder="you@example.com" value="{{ form.email }}">
+    </div>
+
+    <div style="margin-bottom:24px">
+      <label for="Password" style="display:block;font-size:14px;font-weight:500;margin-bottom:4px">Password *</label>
+      <input type="password" name="customer[password]" id="Password" autocomplete="new-password" required
+        style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px"
+        placeholder="At least 8 characters">
+    </div>
+
+    <button type="submit"
+      style="width:100%;padding:12px;background:#111;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer">
+      Create Account
+    </button>
+  {% endform %}
+
+  <p style="text-align:center;margin-top:20px;font-size:14px;color:#666">
+    Already have an account?
+    <a href="{{ routes.account_login_url }}" style="color:#111;font-weight:500">Log in</a>
+  </p>
+</div>

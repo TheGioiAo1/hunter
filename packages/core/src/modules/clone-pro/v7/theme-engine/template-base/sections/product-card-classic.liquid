@@ -1,0 +1,14 @@
+{% comment %}
+  variant: classic
+  tokens_required: [colors.foreground, fonts.primary, components.product_card.aspect_ratio]
+  description: Image top, title + price stacked below. The Shopify default.
+{% endcomment %}
+<a class="product-card product-card--classic" href="/products/{{ product.handle }}">
+  <div class="product-card__media" style="aspect-ratio: {{ product_card_aspect_ratio | default: '3/4' }}">
+    {% if product.image_url %}
+      <img src="{{ product.image_url }}" alt="{{ product.title }}" loading="lazy">
+    {% endif %}
+  </div>
+  <h3 class="product-card__title">{{ product.title }}</h3>
+  <p class="product-card__price">{{ product.price_formatted }}</p>
+</a>

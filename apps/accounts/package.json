@@ -1,0 +1,25 @@
+{
+  "name": "@gbox/accounts",
+  "version": "4.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "node --import tsx src/server.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@gbox/api-client": "file:../../packages/api-client",
+    "@gbox/core": "file:../../packages/core",
+    "express": "^4.21.0",
+    "cookie-parser": "^1.4.7",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/qrcode": "^1.5.5",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}

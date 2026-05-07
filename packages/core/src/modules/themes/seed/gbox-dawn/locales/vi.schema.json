@@ -1,0 +1,123 @@
+{
+  "settings_schema": {
+    "colors": {
+      "name": "Màu sắc",
+      "settings": {
+        "color_background": { "label": "Nền" },
+        "color_foreground": { "label": "Chữ" },
+        "color_accent": { "label": "Nhấn" }
+      }
+    },
+    "typography": {
+      "name": "Kiểu chữ",
+      "settings": {
+        "type_body_family": { "label": "Phông chữ" }
+      }
+    },
+    "layout": {
+      "name": "Bố cục",
+      "settings": {
+        "page_width": { "label": "Bề rộng trang" }
+      }
+    },
+    "social": {
+      "name": "Mạng xã hội",
+      "settings": {
+        "social_facebook": { "label": "Facebook URL" },
+        "social_instagram": { "label": "Instagram URL" },
+        "social_twitter": { "label": "Twitter URL" }
+      }
+    }
+  },
+  "sections": {
+    "header": {
+      "name": "Đầu trang",
+      "settings": {
+        "logo": { "label": "Logo" },
+        "sticky_header_type": {
+          "label": "Đầu trang dính",
+          "options": {
+            "none": "Không",
+            "on_scroll_up": "Khi cuộn lên",
+            "always": "Luôn luôn"
+          }
+        }
+      }
+    },
+    "footer": {
+      "name": "Chân trang",
+      "settings": {
+        "tagline": { "label": "Khẩu hiệu" }
+      }
+    },
+    "hero": {
+      "name": "Banner",
+      "settings": {
+        "heading": { "label": "Tiêu đề" },
+        "subheading": { "label": "Phụ đề" },
+        "cta_label": { "label": "Nhãn nút" },
+        "cta_link": { "label": "Liên kết nút" },
+        "background_image": { "label": "Ảnh nền" }
+      },
+      "presets": { "default": { "name": "Banner" } }
+    },
+    "featured_collection": {
+      "name": "Bộ sưu tập nổi bật",
+      "settings": {
+        "heading": { "label": "Tiêu đề" },
+        "subheading": { "label": "Phụ đề" },
+        "collection_handle": { "label": "Bộ sưu tập" },
+        "products_to_show": { "label": "Số sản phẩm" }
+      },
+      "presets": { "default": { "name": "Bộ sưu tập nổi bật" } }
+    },
+    "image_with_text": {
+      "name": "Hình ảnh và văn bản",
+      "settings": {
+        "heading": { "label": "Tiêu đề" },
+        "text": { "label": "Nội dung" },
+        "image": { "label": "Hình ảnh" },
+        "link_label": { "label": "Nhãn liên kết" },
+        "link_url": { "label": "URL liên kết" }
+      },
+      "presets": { "default": { "name": "Hình ảnh và văn bản" } }
+    },
+    "newsletter": {
+      "name": "Bản tin",
+      "settings": {
+        "heading": { "label": "Tiêu đề" },
+        "subheading": { "label": "Phụ đề" }
+      },
+      "presets": { "default": { "name": "Bản tin" } }
+    },
+    "main_product": {
+      "name": "Thông tin sản phẩm",
+      "settings": {
+        "show_vendor": { "label": "Hiển thị nhà cung cấp" },
+        "show_quantity_selector": { "label": "Hiển thị chọn số lượng" },
+        "show_share_buttons": { "label": "Hiển thị nút chia sẻ" }
+      }
+    },
+    "main_collection": {
+      "name": "Lưới sản phẩm",
+      "settings": {
+        "products_per_row_desktop": { "label": "Sản phẩm/hàng (desktop)" },
+        "products_per_row_mobile": { "label": "Sản phẩm/hàng (mobile)" },
+        "show_filters": { "label": "Hiển thị bộ lọc" },
+        "show_sort": { "label": "Hiển thị sắp xếp" }
+      }
+    },
+    "main_list_collections": { "name": "Danh sách bộ sưu tập" },
+    "main_cart": { "name": "Giỏ hàng" },
+    "main_page": { "name": "Nội dung trang" },
+    "main_policy": { "name": "Nội dung chính sách" },
+    "main_blog": { "name": "Bài viết blog" },
+    "main_article": { "name": "Bài viết" },
+    "main_search": { "name": "Kết quả tìm kiếm" },
+    "main_404": { "name": "Trang 404" },
+    "main_password": { "name": "Cổng mật khẩu" },
+    "main_gift_card": { "name": "Thẻ quà tặng" },
+    "main_login": { "name": "Đăng nhập" },
+    "main_account": { "name": "Tài khoản" }
+  }
+}

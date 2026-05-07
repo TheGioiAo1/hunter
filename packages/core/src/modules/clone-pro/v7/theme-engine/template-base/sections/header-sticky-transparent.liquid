@@ -1,0 +1,19 @@
+{% comment %}
+  variant: sticky-transparent
+  tokens_required: [components.header.height, fonts.primary]
+  description: Sticky on scroll, transparent over hero, fills with bg on scroll. Modern hero overlay style.
+{% endcomment %}
+<div class="header header--sticky-transparent" data-sticky="true">
+  <div class="container header__sticky">
+    <a class="header__logo" href="/">{{ shop_name }}</a>
+    <nav class="header__nav" aria-label="Primary">
+      {%- assign nav_section = 'sections/nav-' | append: component_nav_variant -%}
+      {% include nav_section %}
+    </nav>
+    <div class="header__utility">
+      <a href="/cart" class="header__utility-link" aria-label="Cart">
+        {{ cart_label | default: 'Cart' }}
+      </a>
+    </div>
+  </div>
+</div>

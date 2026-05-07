@@ -1,0 +1,25 @@
+﻿{
+  "delay": 1000,
+  "item": {
+    "xpath": "//div[contains(@class, 'image-wrap')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//img[contains(@class, 'image sb-lazy priority')]",
+        "attr": "alt",
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//img[contains(@class, 'image sb-lazy priority')]",
+        "attr": "src",
+        "replaces": [
+			{
+				"from":"0x500@",
+				"to":""
+			}
+		]
+      }
+    ]
+  } 
+}

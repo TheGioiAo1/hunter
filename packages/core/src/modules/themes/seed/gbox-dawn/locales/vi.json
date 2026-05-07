@@ -1,0 +1,125 @@
+{
+  "accessibility": {
+    "skip_to_content": "Bỏ qua đến nội dung"
+  },
+  "header": {
+    "home": "Trang chủ",
+    "collections": "Mua sắm",
+    "blog": "Bài viết",
+    "about": "Giới thiệu",
+    "contact": "Liên hệ",
+    "search": "Tìm kiếm",
+    "account": "Tài khoản",
+    "login": "Đăng nhập",
+    "cart": "Giỏ hàng",
+    "primary_navigation": "Điều hướng chính"
+  },
+  "footer": {
+    "shop": "Mua sắm",
+    "all_products": "Tất cả sản phẩm",
+    "about": "Giới thiệu",
+    "policies": "Chính sách",
+    "privacy": "Chính sách bảo mật",
+    "refund": "Chính sách hoàn tiền",
+    "terms": "Điều khoản dịch vụ",
+    "shipping": "Chính sách vận chuyển",
+    "powered_by": "Cung cấp bởi"
+  },
+  "product": {
+    "add_to_cart": "Thêm vào giỏ",
+    "sold_out": "Hết hàng",
+    "quantity_increase": "Tăng số lượng",
+    "quantity_decrease": "Giảm số lượng",
+    "share_twitter": "Chia sẻ Twitter",
+    "share_facebook": "Chia sẻ Facebook"
+  },
+  "collection": {
+    "empty": "Chưa có sản phẩm.",
+    "filtered_by": "Lọc theo",
+    "clear": "Xóa bộ lọc"
+  },
+  "list_collections": {
+    "title": "Tất cả bộ sưu tập",
+    "empty": "Chưa có bộ sưu tập.",
+    "products": "sản phẩm"
+  },
+  "blog": {
+    "empty": "Chưa có bài viết.",
+    "filtered_by": "Gắn thẻ",
+    "clear": "Xóa thẻ"
+  },
+  "search": {
+    "title": "Tìm kiếm",
+    "placeholder": "Tìm kiếm cửa hàng",
+    "submit": "Tìm",
+    "results_for": "Kết quả cho",
+    "no_results": "Không tìm thấy kết quả."
+  },
+  "cart": {
+    "title": "Giỏ hàng của bạn",
+    "subtotal": "Tạm tính",
+    "update": "Cập nhật",
+    "checkout": "Thanh toán",
+    "empty": "Giỏ hàng trống.",
+    "continue_shopping": "Tiếp tục mua sắm"
+  },
+  "newsletter": {
+    "email": "Địa chỉ email",
+    "subscribe": "Đăng ký",
+    "success": "Cảm ơn bạn đã đăng ký!"
+  },
+  "password": {
+    "title": "Sắp ra mắt",
+    "description": "Nhập mật khẩu để xem trước cửa hàng.",
+    "label": "Mật khẩu",
+    "submit": "Vào",
+    "error": "Sai mật khẩu — thử lại."
+  },
+  "errors": {
+    "404": {
+      "title": "Không tìm thấy trang",
+      "description": "Chúng tôi không tìm thấy trang bạn yêu cầu."
+    },
+    "500": {
+      "title": "Đã có lỗi xảy ra",
+      "description": "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau."
+    },
+    "back_home": "Về trang chủ"
+  },
+  "customer": {
+    "login": {
+      "title": "Đăng nhập",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "submit": "Đăng nhập",
+      "register": "Tạo tài khoản",
+      "forgot": "Quên mật khẩu?"
+    },
+    "account": {
+      "title": "Tài khoản của bạn",
+      "welcome": "Chào mừng trở lại",
+      "orders_count": "Đơn hàng",
+      "total_spent": "Tổng chi tiêu",
+      "logout": "Đăng xuất"
+    }
+  },
+  "gift_card": {
+    "title": "Thẻ quà tặng",
+    "balance": "Số dư",
+    "code": "Mã",
+    "expires_on": "Hết hạn"
+  },
+  "pagination": {
+    "label": "Phân trang",
+    "previous": "Trước",
+    "next": "Sau"
+  },
+  "breadcrumb": {
+    "label": "Đường dẫn"
+  },
+  "sections": {
+    "featured_collection": {
+      "empty": "Chọn bộ sưu tập trong trình chỉnh sửa giao diện."
+    }
+  }
+}

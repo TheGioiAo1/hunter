@@ -1,0 +1,30 @@
+{% comment %}
+  variant: editorial
+  tokens_required: [fonts.primary, colors.foreground, colors.background, layout.container_max_width]
+  description: Large brand statement + minimal links. Bibliobloom-grade editorial closing.
+{% endcomment %}
+<div class="footer footer--editorial">
+  <div class="container footer__editorial">
+    <div class="footer__statement">
+      <h2 class="footer__statement-headline">{{ footer_statement_headline | default: shop_name }}</h2>
+      {% if footer_statement_body %}
+        <p class="footer__statement-body">{{ footer_statement_body }}</p>
+      {% endif %}
+    </div>
+    <div class="footer__links">
+      {% for group in footer_link_groups %}
+        <section class="footer__link-group">
+          <h4 class="footer__heading">{{ group.heading }}</h4>
+          <ul>
+            {% for link in group.links %}
+              <li><a href="{{ link.href }}">{{ link.label }}</a></li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+    <div class="footer__legal">
+      <p>&copy; {{ footer_year }} {{ shop_name }}.</p>
+    </div>
+  </div>
+</div>

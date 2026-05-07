@@ -1,0 +1,8 @@
+<div class="page-width page-width--narrow text-center">
+  <h1>{{ 'errors.500.title' | t }}</h1>
+  <p>{{ 'errors.500.description' | t }}</p>
+  {%- if error_message -%}
+    <pre class="error-detail">{{ error_message | escape }}</pre>
+  {%- endif -%}
+  <a class="button" href="/">{{ 'errors.back_home' | t }}</a>
+</div>

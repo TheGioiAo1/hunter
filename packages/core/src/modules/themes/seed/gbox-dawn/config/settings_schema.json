@@ -1,0 +1,83 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "Gbox Dawn",
+    "theme_version": "1.0.0",
+    "theme_author": "Gbox",
+    "theme_documentation_url": "https://gbox.co/docs/themes",
+    "theme_support_url": "https://gbox.co/support"
+  },
+  {
+    "name": "t:settings_schema.colors.name",
+    "settings": [
+      {
+        "type": "color",
+        "id": "color_background",
+        "label": "t:settings_schema.colors.settings.color_background.label",
+        "default": "#ffffff"
+      },
+      {
+        "type": "color",
+        "id": "color_foreground",
+        "label": "t:settings_schema.colors.settings.color_foreground.label",
+        "default": "#111111"
+      },
+      {
+        "type": "color",
+        "id": "color_accent",
+        "label": "t:settings_schema.colors.settings.color_accent.label",
+        "default": "#1a1a1a"
+      }
+    ]
+  },
+  {
+    "name": "t:settings_schema.typography.name",
+    "settings": [
+      {
+        "type": "select",
+        "id": "type_body_family",
+        "label": "t:settings_schema.typography.settings.type_body_family.label",
+        "options": [
+          { "value": "system", "label": "System" },
+          { "value": "serif", "label": "Serif" }
+        ],
+        "default": "system"
+      }
+    ]
+  },
+  {
+    "name": "t:settings_schema.layout.name",
+    "settings": [
+      {
+        "type": "range",
+        "id": "page_width",
+        "label": "t:settings_schema.layout.settings.page_width.label",
+        "min": 1000,
+        "max": 1600,
+        "step": 100,
+        "unit": "px",
+        "default": 1200
+      }
+    ]
+  },
+  {
+    "name": "t:settings_schema.social.name",
+    "settings": [
+      {
+        "type": "url",
+        "id": "social_facebook",
+        "label": "t:settings_schema.social.settings.social_facebook.label"
+      },
+      {
+        "type": "url",
+        "id": "social_instagram",
+        "label": "t:settings_schema.social.settings.social_instagram.label"
+      },
+      {
+        "type": "url",
+        "id": "social_twitter",
+        "label": "t:settings_schema.social.settings.social_twitter.label"
+      }
+    ]
+  }
+]

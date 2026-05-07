@@ -1,0 +1,20 @@
+﻿{
+  "delay": 1000,
+  "item": {
+    "xpath": "//li[contains(@class, 'product type-product')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//h2[contains(@class, 'woocommerce-loop-product__title')]",
+        "attr": null,
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//img[contains(@class, 'attachment-woocommerce_thumbnail size-woocommerce_thumbnail')]",
+        "attr": "src",
+        "replaces": null
+      }
+    ]
+  } 
+}

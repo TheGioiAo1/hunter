@@ -1,0 +1,159 @@
+---
+/**
+ * Homepage — hero banner, featured products, categories, trust badges, newsletter.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ProductCard from '../components/ProductCard.astro';
+import { apiClient } from '../../../engine/api-client.js';
+
+const shopId = Astro.locals.shopId;
+const shop = Astro.locals.shop;
+
+// Fetch featured products (first 8 active products)
+let featuredProducts = [];
+try {
+  const result = await apiClient.getProducts(shopId, { status: 'active', limit: 8 });
+  featuredProducts = result.products ?? [];
+} catch {
+  // Graceful fallback
+}
+
+// Fetch collections for "Shop by Category"
+let collections = [];
+try {
+  collections = await apiClient.getCollections(shopId);
+  collections = collections.slice(0, 4);
+} catch {
+  // Graceful fallback
+}
+---
+
+<BaseLayout title="Home" description={`Welcome to ${shop?.name ?? 'our store'}. Discover curated products and collections.`}>
+  <!-- Hero Banner -->
+  <section class="hero">
+    <div class="hero__image">
+      <div style="width:100%;height:100%;background:linear-gradient(135deg, #f5f5dc 0%, #e8e4d8 50%, #d4cfc4 100%);"></div>
+    </div>
+    <div class="hero__overlay" style="background:rgba(0,0,0,0.15);"></div>
+    <div class="hero__content">
+      <h1 class="hero__title">New Season Arrivals</h1>
+      <p class="hero__subtitle">Thoughtfully designed essentials for modern living</p>
+      <a href="/products" class="btn btn--primary btn--large">Shop Now</a>
+    </div>
+  </section>
+
+  <!-- Featured Collection -->
+  {featuredProducts.length > 0 && (
+    <section class="section">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="section__title">Featured Products</h2>
+          <p class="section__subtitle">Our most popular picks, curated just for you</p>
+        </div>
+        <div class="grid grid--4">
+          {featuredProducts.slice(0, 4).map((product) => (
+            <ProductCard product={product} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Shop by Category -->
+  {collections.length > 0 && (
+    <section class="section section--alt">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="section__title">Shop by Category</h2>
+        </div>
+        <div class="grid grid--4">
+          {collections.map((collection) => (
+            <a href={`/collections/${collection.slug}`} class="category-card">
+              {collection.image ? (
+                <img src={collection.image.src} alt={collection.image.alt || collection.title} loading="lazy" />
+              ) : (
+                <div style="position:absolute;inset:0;background:linear-gradient(135deg,#e8e4d8,#d4cfc4);"></div>
+              )}
+              <span class="category-card__label">{collection.title}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Trust Badges -->
+  <section class="section">
+    <div class="container">
+      <div class="trust-badges">
+        <div class="trust-badge">
+          <div class="trust-badge__icon">
+            <svg viewBox="0 0 24 24"><path d="M5 12l5 5L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <p class="trust-badge__title">Free Shipping</p>
+          <p class="trust-badge__text">On orders over $75</p>
+        </div>
+        <div class="trust-badge">
+          <div class="trust-badge__icon">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <p class="trust-badge__title">Secure Checkout</p>
+          <p class="trust-badge__text">100% encrypted payment</p>
+        </div>
+        <div class="trust-badge">
+          <div class="trust-badge__icon">
+            <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1018 0 9 9 0 10-18 0z"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <p class="trust-badge__title">Fast Delivery</p>
+          <p class="trust-badge__text">2-5 business days</p>
+        </div>
+        <div class="trust-badge">
+          <div class="trust-badge__icon">
+            <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <p class="trust-badge__title">Easy Returns</p>
+          <p class="trust-badge__text">30-day return policy</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- More Products -->
+  {featuredProducts.length > 4 && (
+    <section class="section section--alt">
+      <div class="container">
+        <div class="section__header">
+          <h2 class="section__title">More to Explore</h2>
+        </div>
+        <div class="grid grid--4">
+          {featuredProducts.slice(4, 8).map((product) => (
+            <ProductCard product={product} />
+          ))}
+        </div>
+        <div class="text-center mt-8">
+          <a href="/products" class="btn btn--secondary">View All Products</a>
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Newsletter -->
+  <section class="section">
+    <div class="container">
+      <div class="newsletter-section">
+        <h2 class="section__title">Stay in the Loop</h2>
+        <p class="section__subtitle">Be the first to hear about new arrivals, sales, and exclusive offers.</p>
+        <form class="newsletter-section__form" action="/api/newsletter" method="post">
+          <input
+            type="email"
+            name="email"
+            placeholder="Enter your email"
+            required
+            aria-label="Email address"
+          />
+          <button type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

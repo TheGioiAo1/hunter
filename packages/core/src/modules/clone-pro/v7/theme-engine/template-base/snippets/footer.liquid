@@ -1,0 +1,6 @@
+{%- comment -%}
+  Sitewide footer partial — renders the chosen footer variant. Variant is
+  resolved at theme-render time via component-builder.
+{%- endcomment -%}
+{%- assign footer_section = 'sections/footer-' | append: component_footer_variant -%}
+{% include footer_section %}

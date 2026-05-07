@@ -1,0 +1,44 @@
+<section class="cart page-width">
+  <h1>{{ 'cart.title' | t }}</h1>
+
+  {%- if cart.item_count > 0 -%}
+    {% form 'cart' %}
+      <ul class="cart__items">
+        {%- for item in cart.items -%}
+          <li class="cart__item">
+            <div class="cart__item-media">
+              {%- if item.image -%}
+                <img src="{{ item.image }}" alt="{{ item.title | escape }}" loading="lazy">
+              {%- endif -%}
+            </div>
+            <div class="cart__item-info">
+              <a href="{{ item.url }}"><strong>{{ item.title }}</strong></a>
+              {%- if item.variant_title -%}<p>{{ item.variant_title }}</p>{%- endif -%}
+              <p class="cart__item-price">{{ item.price }}</p>
+            </div>
+            <div class="cart__item-qty">
+              {% render 'quantity-input', name: 'updates[]', value: item.quantity %}
+            </div>
+            <div class="cart__item-line-price">{{ item.line_price }}</div>
+          </li>
+        {%- endfor -%}
+      </ul>
+
+      <footer class="cart__footer">
+        <p class="cart__total">{{ 'cart.subtotal' | t }}: <strong>{{ cart.total_price }}</strong></p>
+        <button type="submit" name="update" class="button button--secondary">{{ 'cart.update' | t }}</button>
+        <button type="submit" name="checkout" class="button button--primary">{{ 'cart.checkout' | t }}</button>
+      </footer>
+    {% endform %}
+  {%- else -%}
+    <p class="cart__empty">{{ 'cart.empty' | t }}</p>
+    <a href="/collections" class="button button--primary">{{ 'cart.continue_shopping' | t }}</a>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "t:sections.main_cart.name",
+  "settings": []
+}
+{% endschema %}

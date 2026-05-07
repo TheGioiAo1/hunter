@@ -1,0 +1,29 @@
+# Gbox Platform — Edge sudoers rule
+# (Landing Page System Phase 1D, decision D7)
+#
+# Install at /etc/sudoers.d/gbox-edge (mode 0440, root:root).
+# Validate with `visudo -cf /etc/sudoers.d/gbox-edge` before loading.
+#
+# Grants the gbox-edge system user the MINIMUM set of root commands
+# it needs to reload nginx after the orchestrator writes a new
+# per-domain server block. Scoped narrowly on purpose:
+#
+#   - `nginx -t` validates the merged config BEFORE the reload. If
+#     validation fails the orchestrator logs the failure and leaves
+#     the running nginx untouched.
+#   - `systemctl reload nginx` sends SIGHUP to the master process so
+#     the new config is applied without dropping in-flight requests.
+#
+# We specifically do NOT allow `nginx -s stop`, `systemctl stop`, or
+# `systemctl restart` — those would take the edge offline and none
+# of the orchestrator's code paths need them.
+#
+# The matching Node process is `scripts/ops/domains-worker-loop.ts`
+# running under the gbox-edge user via pm2. It invokes these commands
+# through the reloadNginx() helper in nginx-reloader.ts.
+#
+# If you're running the worker as root (dev box / bootstrap script),
+# set NGINX_NO_SUDO=1 in the env and skip installing this file.
+
+gbox-edge ALL=(root) NOPASSWD: /usr/sbin/nginx -t
+gbox-edge ALL=(root) NOPASSWD: /bin/systemctl reload nginx

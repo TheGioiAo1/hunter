@@ -1,0 +1,21 @@
+{
+  "name": "@gbox/agent-guard",
+  "version": "4.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@gbox/api-client": "file:../api-client",
+    "shell-quote": "^1.8.1"
+  },
+  "devDependencies": {
+    "@types/shell-quote": "^1.7.5",
+    "typescript": "^5.7.0"
+  }
+}

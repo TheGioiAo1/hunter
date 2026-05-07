@@ -1,0 +1,108 @@
+node_modules/
+dist/
+
+# Environment files — chứa secrets (DB password, JWT secret, payment keys).
+# Chỉ commit `.env.example` làm template.
+.env
+.env.local
+.env.*
+!.env.example
+apps/**/.env
+apps/**/.env.local
+
+# Per-host docker compose secrets — không commit (chứa REDIS_URL với password, etc.)
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# Claude Code skills (local only, too large for git)
+.claude/skills/*/scripts/node_modules/
+.claude/skills/*/scripts/.coverage
+*.db
+*.db-journal
+uploads/
+.astro/
+.wrangler/
+coverage/
+.superpowers/
+
+# ---------------------------------------------------------------------------
+# Terraform
+# ---------------------------------------------------------------------------
+
+# Local .terraform directories (provider plugins, module cache — hundreds of MB)
+**/.terraform/*
+
+# State files — contain resource IDs, ARNs, sometimes sensitive attrs.
+# Local backend only for now; migrate to S3 backend later and delete these.
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Binary plan files — outputs of `terraform plan -out=`. Re-generated on demand.
+tfplan
+tfplan-*
+
+# Terraform output dumps we save to docs/ for reference.
+docs/.terraform-*.json
+docs/.terraform-*.txt
+
+# Ignore crash logs
+crash.log
+crash.*.log
+
+# Keep provider lock file — pins provider versions for reproducible builds.
+!**/.terraform.lock.hcl
+
+# ---------------------------------------------------------------------------
+# TypeScript build artifacts
+#
+# Project convention: sources are .ts in src/, compiled output goes to dist/
+# (see each app's tsconfig.json). Any .d.ts / .js.map / compiled .js found
+# inside src/, tests/, or scripts/ is build output leaked from `tsc` run
+# without proper --outDir — treat as gitignored.
+#
+# Root-level .js config files (astro.config.*, vitest.config.*, etc.) are
+# NOT in these dirs and stay tracked.
+# ---------------------------------------------------------------------------
+
+# Leaked build artifact extensions (anywhere in monorepo)
+**/*.d.ts
+**/*.d.ts.map
+**/*.js.map
+**/*.tsbuildinfo
+
+# Compiled JS leaked into TS source trees. Scoped to apps/ and packages/
+# only — tsc with misconfigured --outDir dumps .js next to .ts. Other
+# dirs (.claude/skills/**, scripts/load/**, root-level configs) contain
+# hand-written .js and .mjs that stay tracked.
+apps/*/src/**/*.js
+apps/*/tests/**/*.js
+packages/*/src/**/*.js
+packages/*/tests/**/*.js
+
+# Exceptions: static assets served as-is (not TS-compiled)
+!apps/*/src/static/**/*.js
+!apps/*/public/**/*.js
+
+# Keep declaration files that are intentionally hand-written
+!packages/storefront/src/env.d.ts
+tmp/
+
+# ---------------------------------------------------------------------------
+# Root-level junk (compiled JS leaks + log artifacts)
+#
+# Repo conventions:
+#   - All configs are .ts/.mjs (vitest.config.ts, etc.) — NEVER commit a .js
+#     compile of those (would shadow the .ts and may drift out of sync, e.g.
+#     vitest.config.js missed the path-alias config and broke imports).
+#   - Install logs are local diagnostics only.
+# ---------------------------------------------------------------------------
+/seed-data.js
+/storefront-server.js
+/vitest.config.js
+/install.log
+/*.log
+
+# Generated demo SVG from preview-world-map.mjs (regenerated on demand).
+apps/store-admin/scripts/.world-preview.svg
+.claude/worktrees/

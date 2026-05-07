@@ -1,0 +1,71 @@
+{% comment %} Shopping Cart Page {% endcomment %}
+
+<section class="cart-page">
+  <div class="container">
+    <h1 class="cart-title">Your Cart</h1>
+
+    {% if cart.item_count > 0 %}
+      <form action="/cart" method="post" class="cart-form">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Quantity</th>
+              <th>Total</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in cart.items %}
+              <tr class="cart-item">
+                <td class="cart-product">
+                  <div class="cart-product-inner">
+                    {% if item.image %}
+                      <img src="{{ item.image | img_url: 'compact' }}" alt="{{ item.title }}" class="cart-item-image" loading="lazy">
+                    {% endif %}
+                    <div class="cart-item-details">
+                      <a href="{{ item.url }}" class="cart-item-title">{{ item.product.title }}</a>
+                      {% if item.variant.title != 'Default Title' %}
+                        <p class="cart-item-variant">{{ item.variant.title }}</p>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td class="cart-price">{{ item.price | money }}</td>
+                <td class="cart-quantity">
+                  <input type="number" name="updates[]" value="{{ item.quantity }}" min="0" max="99" data-line="{{ forloop.index }}">
+                </td>
+                <td class="cart-total">{{ item.line_price | money }}</td>
+                <td class="cart-remove">
+                  <a href="/cart/change?line={{ forloop.index }}&quantity=0" class="remove-item" aria-label="Remove {{ item.title }}">&times;</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="cart-footer">
+          <div class="cart-note">
+            <label for="cart-note">Order Notes</label>
+            <textarea id="cart-note" name="note" rows="3">{{ cart.note }}</textarea>
+          </div>
+          <div class="cart-summary">
+            <div class="cart-subtotal">
+              <span>Subtotal</span>
+              <span class="cart-subtotal-price">{{ cart.total_price | money }}</span>
+            </div>
+            <p class="cart-shipping-note">Shipping & taxes calculated at checkout</p>
+            <button type="submit" name="update" class="btn btn-secondary">Update Cart</button>
+            <button type="submit" name="checkout" class="btn add-to-cart">Checkout</button>
+          </div>
+        </div>
+      </form>
+    {% else %}
+      <div class="cart-empty">
+        <p>Your cart is empty.</p>
+        <a href="/collections/all" class="btn">Continue Shopping</a>
+      </div>
+    {% endif %}
+  </div>
+</section>

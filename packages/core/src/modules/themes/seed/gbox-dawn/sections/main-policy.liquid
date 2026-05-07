@@ -1,0 +1,15 @@
+<article class="policy page-width page-width--narrow">
+  <header class="policy__header">
+    <h1>{{ policy.title | default: page.title }}</h1>
+  </header>
+  <div class="policy__content rte">
+    {{ policy.body | default: page.content }}
+  </div>
+</article>
+
+{% schema %}
+{
+  "name": "t:sections.main_policy.name",
+  "settings": []
+}
+{% endschema %}

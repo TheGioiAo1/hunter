@@ -1,0 +1,7 @@
+{
+  "deletions": [],
+  "version": "1.2.5",
+  "name": "claudex-kit",
+  "description": "Portable .claude configuration template for fullstack development (NestJS + React + NextJS + Prisma + MongoDB + Redis + Docker + shadcn/ui + Wails).",
+  "buildDate": "2026-04-16T03:11:00.000Z"
+}

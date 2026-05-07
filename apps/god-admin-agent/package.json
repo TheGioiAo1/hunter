@@ -1,0 +1,24 @@
+{
+  "name": "@gbox/god-admin-agent",
+  "version": "4.0.0",
+  "type": "module",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "node --import tsx src/server.ts"
+  },
+  "dependencies": {
+    "@gbox/agent-core": "file:../../packages/agent-core",
+    "@gbox/agent-guard": "file:../../packages/agent-guard",
+    "@gbox/agent-tools": "file:../../packages/agent-tools",
+    "@gbox/api-client": "file:../../packages/api-client",
+    "express": "^4.21.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.7.0"
+  }
+}

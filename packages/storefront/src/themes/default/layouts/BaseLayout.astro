@@ -1,0 +1,82 @@
+---
+/**
+ * BaseLayout — the main HTML shell for all storefront pages.
+ * Includes SEO meta, Open Graph, header, footer, and theme CSS.
+ */
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  canonicalUrl?: string;
+}
+
+const { title, description, ogImage, canonicalUrl } = Astro.props;
+
+const shop = Astro.locals.shop;
+const shopId = Astro.locals.shopId;
+
+const shopName = shop?.name ?? 'Store';
+const pageTitle = title ? `${title} - ${shopName}` : shopName;
+const pageDescription = description ?? `Shop the latest products at ${shopName}.`;
+const pageImage = ogImage ?? '';
+
+// Cart count from cookie (quick read, no API call)
+let cartCount = 0;
+try {
+  const cartCookie = Astro.request.headers.get('cookie')
+    ?.split('; ')
+    .find((c) => c.startsWith('cart_count='));
+  if (cartCookie) {
+    cartCount = parseInt(cartCookie.split('=')[1] ?? '0', 10);
+  }
+} catch {
+  // Ignore
+}
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content={pageDescription} />
+
+  <title>{pageTitle}</title>
+
+  <!-- Canonical -->
+  {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={pageTitle} />
+  <meta property="og:description" content={pageDescription} />
+  {pageImage && <meta property="og:image" content={pageImage} />}
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={pageTitle} />
+  <meta name="twitter:description" content={pageDescription} />
+  {pageImage && <meta name="twitter:image" content={pageImage} />}
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <!-- Theme CSS -->
+  <link rel="stylesheet" href="/theme.css" />
+
+  <!-- Preconnect to API -->
+  <link rel="preconnect" href={import.meta.env.GBOX_API_URL || 'http://localhost:3000'} />
+</head>
+<body>
+  <Header shopName={shopName} shopId={shopId} cartCount={cartCount} />
+
+  <main id="main-content">
+    <slot />
+  </main>
+
+  <Footer shopName={shopName} />
+</body>
+</html>

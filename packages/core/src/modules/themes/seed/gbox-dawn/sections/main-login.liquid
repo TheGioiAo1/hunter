@@ -1,0 +1,33 @@
+<section class="customer-login page-width page-width--narrow">
+  <h1>{{ 'customer.login.title' | t }}</h1>
+
+  {% form 'customer_login' %}
+    <label for="login-email">{{ 'customer.login.email' | t }}</label>
+    <input id="login-email" type="email" name="customer[email]" required>
+
+    <label for="login-password">{{ 'customer.login.password' | t }}</label>
+    <input id="login-password" type="password" name="customer[password]" required>
+
+    <button type="submit" class="button button--primary">{{ 'customer.login.submit' | t }}</button>
+
+    {%- if form.errors -%}
+      <ul class="form__status form__status--error">
+        {%- for err in form.errors -%}
+          <li>{{ form.errors_messages[err] }}</li>
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  {% endform %}
+
+  <p class="customer-login__alt">
+    <a href="/account/register">{{ 'customer.login.register' | t }}</a>
+    · <a href="/account/recover">{{ 'customer.login.forgot' | t }}</a>
+  </p>
+</section>
+
+{% schema %}
+{
+  "name": "t:sections.main_login.name",
+  "settings": []
+}
+{% endschema %}

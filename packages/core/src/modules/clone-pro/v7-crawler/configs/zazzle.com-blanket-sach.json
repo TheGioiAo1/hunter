@@ -1,0 +1,25 @@
+﻿{
+  "delay": 1000,
+  "item": {
+    "xpath": "//div[contains(@class, 'SearchResults_cell SearchResultsGridCell2_root GA-MaybeProduct')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//a[contains(@class, 'Link Link--marketplaceTheme SearchResultsGridCell2_link')]",
+        "attr": "aria-label",
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//img[contains(@class, 'SearchResultsGridCellRealview-realview')]",
+        "attr": "src",
+        "replaces": [
+			{	
+				"from":"_307",
+				"to":"_900"
+			}
+		]
+      }
+    ]
+  } 
+}

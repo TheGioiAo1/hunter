@@ -1,0 +1,60 @@
+{
+  "delay": 2000,
+  "item": {
+    "xpath": "//li[contains(@class,'product')] | //div[contains(@class,'product-small') or contains(@class,'wc-product')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//a[contains(@class,'woocommerce-loop-product__link')] | .//h2[contains(@class,'woocommerce-loop-product__title')] | .//h3 | .//h2",
+        "attr": null,
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//img[contains(@class,'wp-post-image') or contains(@class,'attachment')] | .//img",
+        "attr": "src",
+        "replaces": [
+          { "from": "-300x300", "to": "" },
+          { "from": "-150x150", "to": "" },
+          { "from": "-600x600", "to": "" }
+        ]
+      },
+      {
+        "name": "Link",
+        "xpath": ".//a[contains(@class,'woocommerce-loop-product__link')] | .//a[contains(@href,'/product/')]",
+        "attr": "href",
+        "replaces": null
+      },
+      {
+        "name": "Price",
+        "xpath": ".//span[contains(@class,'price')]//ins//bdi | .//span[contains(@class,'woocommerce-Price-amount')]//bdi | .//span[contains(@class,'price')]",
+        "attr": null,
+        "replaces": [
+          { "from": "$", "to": "" },
+          { "from": "€", "to": "" },
+          { "from": "£", "to": "" },
+          { "from": ",", "to": "" }
+        ]
+      },
+      {
+        "name": "Description",
+        "xpath": "//div[contains(@class,'woocommerce-product-details__short-description')] | //div[@id='tab-description'] | //div[contains(@class,'product-description')]",
+        "attr": null,
+        "replaces": null
+      },
+      {
+        "name": "Variants",
+        "xpath": "//table[contains(@class,'variations')]//select/option | //div[contains(@class,'variations')]//label"
+      }
+    ],
+    "images_in_detail": {
+      "name": "GalleryImages",
+      "xpath": "//div[contains(@class,'woocommerce-product-gallery')]//img | //figure[contains(@class,'gallery')]//img",
+      "attr": "src",
+      "replaces": [
+        { "from": "-300x300", "to": "" },
+        { "from": "-600x600", "to": "" }
+      ]
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{% comment %} Blog Listing Page {% endcomment %}
+
+<section class="blog-page">
+  <div class="container">
+    <h1 class="blog-title">{{ blog.title | default: 'Blog' }}</h1>
+
+    <div class="blog-grid">
+      {% for article in blog.articles %}
+        <article class="blog-card">
+          {% if article.image %}
+            <a href="{{ article.url }}" class="blog-card-image">
+              <img src="{{ article.image | img_url: 'medium' }}" alt="{{ article.title }}" loading="lazy">
+            </a>
+          {% endif %}
+          <div class="blog-card-content">
+            <time class="blog-date" datetime="{{ article.published_at | date: '%Y-%m-%d' }}">
+              {{ article.published_at | date: '%B %d, %Y' }}
+            </time>
+            <h2 class="blog-card-title">
+              <a href="{{ article.url }}">{{ article.title }}</a>
+            </h2>
+            {% if article.excerpt != blank %}
+              <p class="blog-excerpt">{{ article.excerpt | strip_html | truncate: 160 }}</p>
+            {% endif %}
+            <a href="{{ article.url }}" class="read-more">Read more &rarr;</a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+    {% if paginate.pages > 1 %}
+      <nav class="pagination" aria-label="Pagination">
+        {{ paginate | default_pagination }}
+      </nav>
+    {% endif %}
+  </div>
+</section>

@@ -1,0 +1,22 @@
+{% comment %}
+  variant: editorial
+  tokens_required: [colors.foreground, fonts.primary, fonts.secondary, components.product_card.border_radius]
+  description: Square image, serif title, subtle hover reveal. Bibliobloom-grade.
+{% endcomment %}
+<a class="product-card product-card--editorial" href="/products/{{ product.handle }}">
+  <div class="product-card__media" style="aspect-ratio: 1/1">
+    {% if product.image_url %}
+      <img src="{{ product.image_url }}" alt="{{ product.title }}" loading="lazy">
+    {% endif %}
+    {% if product.image_secondary_url %}
+      <img class="product-card__media--alt" src="{{ product.image_secondary_url }}" alt="" loading="lazy">
+    {% endif %}
+  </div>
+  <div class="product-card__meta">
+    <h3 class="product-card__title product-card__title--serif">{{ product.title }}</h3>
+    {% if product.author %}
+      <p class="product-card__byline">{{ product.author }}</p>
+    {% endif %}
+    <p class="product-card__price">{{ product.price_formatted }}</p>
+  </div>
+</a>

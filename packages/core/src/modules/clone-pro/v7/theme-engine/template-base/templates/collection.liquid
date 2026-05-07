@@ -1,0 +1,19 @@
+{% comment %} PLP — collection / product listing page. {% endcomment %}
+<section class="plp" aria-labelledby="plp-heading">
+  <div class="container">
+    <header class="plp-header">
+      <h1 id="plp-heading" class="collection-title">{{ collection.title }}</h1>
+      {% if collection.description %}
+        <p class="collection-description">{{ collection.description }}</p>
+      {% endif %}
+    </header>
+    {%- assign card_section = 'sections/product-card-' | append: component_product_card_variant -%}
+    <ul class="product-grid grid-cols-{{ layout_grid_columns | default: 3 }}">
+      {% for product in collection.products %}
+        <li class="product-grid-item">
+          {% include card_section, product: product %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>

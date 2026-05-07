@@ -1,0 +1,62 @@
+<section class="collection page-width">
+  <header class="collection__header">
+    <h1>{{ collection.title }}</h1>
+    {%- if collection.description != blank -%}
+      <div class="collection__description rte">{{ collection.description }}</div>
+    {%- endif -%}
+    {%- if collection.current_tag -%}
+      <p class="collection__filter-active">{{ 'collection.filtered_by' | t }}: <strong>{{ collection.current_tag }}</strong> · <a href="{{ collection.url }}">{{ 'collection.clear' | t }}</a></p>
+    {%- endif -%}
+  </header>
+
+  {%- if products and products.size > 0 -%}
+    {% paginate products by 24 %}
+      <ul class="product-grid product-grid--{{ section.settings.products_per_row_desktop }}-col">
+        {%- for product in products -%}
+          <li>{% render 'product-card', product: product %}</li>
+        {%- endfor -%}
+      </ul>
+      {% render 'pagination', paginate: paginate %}
+    {% endpaginate %}
+  {%- else -%}
+    <p class="collection__empty">{{ 'collection.empty' | t }}</p>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "t:sections.main_collection.name",
+  "settings": [
+    {
+      "type": "range",
+      "id": "products_per_row_desktop",
+      "label": "t:sections.main_collection.settings.products_per_row_desktop.label",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "products_per_row_mobile",
+      "label": "t:sections.main_collection.settings.products_per_row_mobile.label",
+      "min": 1,
+      "max": 2,
+      "step": 1,
+      "default": 2
+    },
+    {
+      "type": "checkbox",
+      "id": "show_filters",
+      "label": "t:sections.main_collection.settings.show_filters.label",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sort",
+      "label": "t:sections.main_collection.settings.show_sort.label",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

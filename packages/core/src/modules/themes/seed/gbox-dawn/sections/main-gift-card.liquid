@@ -1,0 +1,21 @@
+<section class="gift-card page-width page-width--narrow text-center">
+  <h1>{{ 'gift_card.title' | t }}</h1>
+  <p class="gift-card__balance">
+    {{ 'gift_card.balance' | t }}: <strong>{{ gift_card.balance }} {{ gift_card.currency }}</strong>
+  </p>
+  {%- if gift_card.code -%}
+    <p class="gift-card__code">
+      {{ 'gift_card.code' | t }}: <code>{{ gift_card.code }}</code>
+    </p>
+  {%- endif -%}
+  {%- if gift_card.expires_on -%}
+    <p>{{ 'gift_card.expires_on' | t }}: {{ gift_card.expires_on | date: '%B %-d, %Y' }}</p>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "t:sections.main_gift_card.name",
+  "settings": []
+}
+{% endschema %}

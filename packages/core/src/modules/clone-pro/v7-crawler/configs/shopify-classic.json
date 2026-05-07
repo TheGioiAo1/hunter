@@ -1,0 +1,75 @@
+{
+  "delay": 2000,
+  "item": {
+    "xpath": "//article[contains(@class,'item collection-product') or contains(@class,'product-card') or contains(@class,'product-item') or contains(@class,'grid__item')] | //div[contains(@class,'product-card') or contains(@class,'product-item') or contains(@class,'grid__item')] | //li[contains(@class,'product-card') or contains(@class,'grid__item')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//a[contains(@href,'/products/')] | .//h1 | .//h2[contains(@class,'product')] | .//h3[contains(@class,'product')]",
+        "attr": "title",
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//img[@data-src] | .//img[@src]",
+        "attr": "data-src",
+        "replaces": [
+          { "from": "_480x", "to": "" },
+          { "from": "_360x", "to": "" },
+          { "from": "_300x", "to": "" },
+          { "from": "_{width}x", "to": "" }
+        ]
+      },
+      {
+        "name": "Link",
+        "xpath": ".//a[contains(@href,'/products/')]",
+        "attr": "href",
+        "replaces": null
+      },
+      {
+        "name": "Price",
+        "xpath": ".//span[contains(@class,'sell-price') or contains(@class,'price-item--regular') or contains(@class,'price__current') or contains(@class,'price')] | .//*[@itemprop='price']",
+        "attr": null,
+        "replaces": [
+          { "from": "$", "to": "" },
+          { "from": "USD", "to": "" },
+          { "from": ",", "to": "" },
+          { "from": " ", "to": "" }
+        ]
+      },
+      {
+        "name": "OldPrice",
+        "xpath": ".//s | .//span[contains(@class,'price-item--sale') or contains(@class,'compare') or contains(@class,'price--compare')]",
+        "attr": null,
+        "replaces": [
+          { "from": "$", "to": "" },
+          { "from": "USD", "to": "" },
+          { "from": ",", "to": "" }
+        ]
+      },
+      {
+        "name": "Description",
+        "xpath": "//div[contains(@class,'product-description') or contains(@class,'product__description') or contains(@class,'rte') or @itemprop='description']",
+        "attr": null,
+        "replaces": null
+      },
+      {
+        "name": "Variants",
+        "xpath": "//select[@name='id' or @name='options' or contains(@class,'variant')]/option | //ul[contains(@class,'variant')]//li",
+        "attr": null,
+        "replaces": null
+      }
+    ],
+    "images_in_detail": {
+      "name": "GalleryImages",
+      "xpath": "//div[contains(@class,'product-gallery') or contains(@class,'product__media') or contains(@class,'product-images') or contains(@class,'product-photos')]//img | //meta[@property='og:image']",
+      "attr": "src",
+      "replaces": [
+        { "from": "_480x", "to": "" },
+        { "from": "_600x", "to": "" },
+        { "from": "_800x", "to": "" },
+        { "from": "_{width}x", "to": "" }
+      ]
+    }
+  }
+}

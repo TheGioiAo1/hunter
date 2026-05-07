@@ -1,0 +1,44 @@
+﻿{
+  "delay": 1000,
+  "item": {
+    "xpath": "//div[contains(@class, 'product-item item col')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//h4[contains(@class, 'card-title text-capitalize fs-6 fw-normal')]",
+        "attr": null,
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//img[contains(@class, 'object-fit-contain lazy')]",
+        "attr": "data-src",
+        "replaces": []
+      },
+      {
+        "name": "Link",
+        "xpath": ".//a[contains(@class, 'text-decoration-none text-dark')]",
+        "attr": "href",
+        "replaces": [
+			{
+				"from":"/products/",
+				"to":"https://{domain}/products/"
+			}
+		]
+      },
+	  {
+        "name": "Price",
+        "xpath": ".//span[contains(@class, 'currency')]",
+        "attr": null,
+        "replaces": null
+      },
+	  {
+		  "name":"Galery",
+		  "xpath":"",
+		  "attr": null,
+		"replaces": null
+	  }
+    ]
+	
+  } 
+}

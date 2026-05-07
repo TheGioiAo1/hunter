@@ -1,0 +1,203 @@
+name: Production Deploy
+
+on:
+  # Auto-deploy on every push to master.
+  # 2026-04-26 fix: was `main`, but the repo's default branch is `master` —
+  # the workflow had been silently failing in 0s on every push for months.
+  push:
+    branches:
+      - master
+  # Manual trigger so we can re-run a deploy from any commit without
+  # having to amend/force-push.
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  test:
+    name: Test & Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        # --legacy-peer-deps: @anthropic-ai/claude-agent-sdk peers on
+        # zod@^4 but root project pins zod@^3.25 (kysely, astro, etc).
+        run: npm ci --legacy-peer-deps
+
+      - name: TypeScript check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test -- --run --reporter=verbose
+        env:
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        # See test job above — zod peer dep conflict with claude-agent-sdk.
+        run: npm ci --legacy-peer-deps
+
+      - name: Build storefront
+        run: npm run build --workspace=packages/storefront
+        env:
+          NODE_ENV: production
+
+      - name: Build API
+        run: npm run build --workspace=packages/api 2>/dev/null || true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            packages/storefront/dist
+            packages/api/dist
+          retention-days: 1
+
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 10
+
+    environment:
+      name: production
+      url: ${{ secrets.PRODUCTION_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Add host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy via SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+        run: |
+          # Create deployment directory
+          ssh $VPS_USER@$VPS_HOST "mkdir -p $DEPLOY_PATH/releases/${{ github.sha }}"
+
+          # Sync project files
+          rsync -avz --delete \
+            --exclude='node_modules' \
+            --exclude='.git' \
+            --exclude='.github' \
+            ./ $VPS_USER@$VPS_HOST:$DEPLOY_PATH/releases/${{ github.sha }}/
+
+          # Sync build artifacts
+          rsync -avz \
+            packages/storefront/dist/ \
+            $VPS_USER@$VPS_HOST:$DEPLOY_PATH/releases/${{ github.sha }}/packages/storefront/dist/
+
+          # Run deployment commands on the server
+          ssh $VPS_USER@$VPS_HOST << 'DEPLOY_SCRIPT'
+            set -e
+            DEPLOY_PATH="${{ secrets.VPS_DEPLOY_PATH }}"
+            RELEASE_DIR="$DEPLOY_PATH/releases/${{ github.sha }}"
+
+            # Install production dependencies
+            # --legacy-peer-deps: @anthropic-ai/claude-agent-sdk peers on zod@^4.
+            cd "$RELEASE_DIR"
+            npm ci --production --legacy-peer-deps
+
+            # Run database migrations
+            npm run db:migrate || true
+
+            # Update the symlink to the new release
+            ln -sfn "$RELEASE_DIR" "$DEPLOY_PATH/current"
+
+            # Copy environment file
+            cp "$DEPLOY_PATH/.env" "$DEPLOY_PATH/current/.env" 2>/dev/null || true
+
+            # Restart the application via systemd
+            sudo systemctl restart gbox-platform || true
+
+            # Clean up old releases (keep last 5)
+            cd "$DEPLOY_PATH/releases"
+            ls -1dt */ | tail -n +6 | xargs -r rm -rf
+
+            echo "Deployment complete: ${{ github.sha }}"
+          DEPLOY_SCRIPT
+
+      - name: Health check
+        run: |
+          sleep 10
+          HEALTH_URL="${{ secrets.PRODUCTION_URL }}/api/health"
+          for i in $(seq 1 5); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Attempt $i: status $STATUS, retrying..."
+            sleep 5
+          done
+          echo "Health check failed after 5 attempts"
+          exit 1
+
+      - name: Notify deployment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ job.status }}';
+            const emoji = status === 'success' ? 'white_check_mark' : 'x';
+            const message = status === 'success'
+              ? `Production deployment successful (${context.sha.substring(0, 7)})`
+              : `Production deployment failed (${context.sha.substring(0, 7)})`;
+
+            // Create a deployment status
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: status === 'success' ? 'success' : 'failure',
+              description: message,
+              context: 'Production Deploy',
+              target_url: '${{ secrets.PRODUCTION_URL }}',
+            });

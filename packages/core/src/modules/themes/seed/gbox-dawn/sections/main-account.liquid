@@ -1,0 +1,28 @@
+<section class="customer-account page-width page-width--narrow">
+  <header class="customer-account__header">
+    <h1>{{ 'customer.account.title' | t }}</h1>
+    <p>{{ 'customer.account.welcome' | t }}, <strong>{{ customer.first_name | default: customer.email }}</strong></p>
+  </header>
+
+  <dl class="customer-account__stats">
+    <div>
+      <dt>{{ 'customer.account.orders_count' | t }}</dt>
+      <dd>{{ customer.orders_count | default: 0 }}</dd>
+    </div>
+    <div>
+      <dt>{{ 'customer.account.total_spent' | t }}</dt>
+      <dd>{{ customer.total_spent | default: 0 }}</dd>
+    </div>
+  </dl>
+
+  <p>
+    <a class="button button--secondary" href="/account/logout">{{ 'customer.account.logout' | t }}</a>
+  </p>
+</section>
+
+{% schema %}
+{
+  "name": "t:sections.main_account.name",
+  "settings": []
+}
+{% endschema %}

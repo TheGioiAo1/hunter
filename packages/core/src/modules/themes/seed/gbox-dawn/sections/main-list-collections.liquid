@@ -1,0 +1,27 @@
+<section class="list-collections page-width">
+  <h1>{{ 'list_collections.title' | t }}</h1>
+
+  {%- if collections and collections.size > 0 -%}
+    <ul class="collection-grid">
+      {%- for collection in collections -%}
+        <li class="collection-card">
+          <a href="{{ collection.url | default: '/collections/' | append: collection.handle }}">
+            <h2>{{ collection.title }}</h2>
+            {%- if collection.products_count -%}
+              <small>{{ collection.products_count }} {{ 'list_collections.products' | t }}</small>
+            {%- endif -%}
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+  {%- else -%}
+    <p>{{ 'list_collections.empty' | t }}</p>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "t:sections.main_list_collections.name",
+  "settings": []
+}
+{% endschema %}

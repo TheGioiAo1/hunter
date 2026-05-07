@@ -1,0 +1,28 @@
+{% comment %}
+  variant: mega-menu
+  tokens_required: [fonts.primary, colors.foreground, colors.background, layout.container_max_width]
+  description: Mega menu with featured columns. For large catalogs (50+ collections).
+{% endcomment %}
+<ul class="nav nav--mega">
+  {% for item in main_menu %}
+    <li class="nav__item nav__item--has-mega">
+      <a class="nav__link" href="{{ item.href }}">{{ item.label }}</a>
+      {% if item.children and item.children.size > 0 %}
+        <div class="nav__mega" hidden>
+          <div class="container nav__mega-grid">
+            {% for child_group in item.children %}
+              <section class="nav__mega-col">
+                <h4 class="nav__mega-heading">{{ child_group.label }}</h4>
+                <ul>
+                  {% for sub in child_group.children %}
+                    <li><a href="{{ sub.href }}">{{ sub.label }}</a></li>
+                  {% endfor %}
+                </ul>
+              </section>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>

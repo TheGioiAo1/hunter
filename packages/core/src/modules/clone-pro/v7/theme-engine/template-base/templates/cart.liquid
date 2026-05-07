@@ -1,0 +1,26 @@
+{% comment %} Cart template. {% endcomment %}
+<section class="cart" aria-labelledby="cart-heading">
+  <div class="container">
+    <h1 id="cart-heading" class="page-title">{{ cart_title | default: 'Your cart' }}</h1>
+    {% if cart.line_items.size == 0 %}
+      <p class="cart-empty">{{ cart_empty_label | default: 'Your cart is empty.' }}</p>
+    {% else %}
+      <ul class="cart-items">
+        {% for item in cart.line_items %}
+          <li class="cart-item">
+            <img src="{{ item.image_url }}" alt="{{ item.title }}">
+            <div class="cart-item-meta">
+              <a href="/products/{{ item.product_handle }}">{{ item.title }}</a>
+              <span class="cart-item-qty">x{{ item.quantity }}</span>
+              <span class="cart-item-price">{{ item.price_formatted }}</span>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+      <div class="cart-summary">
+        <p class="cart-subtotal">{{ subtotal_label | default: 'Subtotal' }}: {{ cart.subtotal_formatted }}</p>
+        <a href="/checkout" class="btn btn-primary">{{ checkout_label | default: 'Checkout' }}</a>
+      </div>
+    {% endif %}
+  </div>
+</section>

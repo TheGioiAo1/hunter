@@ -1,0 +1,212 @@
+---
+/**
+ * Cart Page — line items, quantity controls, discount code, summary, checkout CTA.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { apiClient } from '../../../engine/api-client.js';
+
+const shopId = Astro.locals.shopId;
+
+// Read cart token from cookie
+const cartToken = Astro.request.headers
+  .get('cookie')
+  ?.split('; ')
+  .find((c) => c.startsWith('cart_token='))
+  ?.split('=')[1];
+
+const cart = await apiClient.getCart(shopId, cartToken);
+const isEmpty = !cart.line_items || cart.line_items.length === 0;
+
+function formatPrice(amount: string, currency = 'USD'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  }).format(parseFloat(amount));
+}
+
+function lineTotal(price: string, quantity: number): string {
+  return (parseFloat(price) * quantity).toFixed(2);
+}
+---
+
+<BaseLayout title="Cart" description="Review the items in your shopping cart.">
+  <div class="container cart-page">
+    <h1 class="cart-page__title">Your Cart</h1>
+
+    {isEmpty ? (
+      <div class="cart-empty">
+        <svg width="64" height="64" viewBox="0 0 24 24" style="margin:0 auto var(--space-4);stroke:var(--color-text-muted);stroke-width:1.5;fill:none;">
+          <path d="M6 6h15l-1.5 9h-12z" />
+          <circle cx="9" cy="20" r="1" />
+          <circle cx="18" cy="20" r="1" />
+          <path d="M6 6L5.2 3H2" />
+        </svg>
+        <p>Your cart is empty</p>
+        <a href="/products" class="btn btn--primary">Continue Shopping</a>
+      </div>
+    ) : (
+      <>
+        <!-- Cart Table -->
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Quantity</th>
+              <th>Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cart.line_items.map((item) => (
+              <tr>
+                <td>
+                  <div class="cart-item">
+                    {item.image ? (
+                      <img class="cart-item__image" src={item.image} alt={item.title} loading="lazy" />
+                    ) : (
+                      <div class="cart-item__image" style="background:var(--color-bg-secondary);"></div>
+                    )}
+                    <div class="cart-item__info">
+                      <a href={item.url || '#'} class="cart-item__title">{item.title}</a>
+                      {item.variant_title && item.variant_title !== 'Default Title' && (
+                        <span class="cart-item__variant">{item.variant_title}</span>
+                      )}
+                      <button
+                        class="cart-item__remove"
+                        data-remove-item={item.id}
+                        data-cart-token={cart.token}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="quantity-selector">
+                    <button
+                      type="button"
+                      data-update-quantity
+                      data-item-id={item.id}
+                      data-cart-token={cart.token}
+                      data-quantity={item.quantity - 1}
+                      aria-label="Decrease quantity"
+                    >
+                      &minus;
+                    </button>
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      min="1"
+                      readonly
+                      aria-label="Quantity"
+                    />
+                    <button
+                      type="button"
+                      data-update-quantity
+                      data-item-id={item.id}
+                      data-cart-token={cart.token}
+                      data-quantity={item.quantity + 1}
+                      aria-label="Increase quantity"
+                    >
+                      +
+                    </button>
+                  </div>
+                </td>
+                <td>{formatPrice(item.price)}</td>
+                <td>{formatPrice(lineTotal(item.price, item.quantity))}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <!-- Cart Summary -->
+        <div class="cart-summary">
+          <div class="cart-summary__row">
+            <span>Subtotal</span>
+            <span>{formatPrice(cart.total_price, cart.currency)}</span>
+          </div>
+          <div class="cart-summary__row">
+            <span>Shipping</span>
+            <span class="text-secondary">Calculated at checkout</span>
+          </div>
+
+          <!-- Discount Code -->
+          <div class="cart-discount">
+            <form class="cart-discount__form">
+              <input
+                class="form-input"
+                type="text"
+                name="discount_code"
+                placeholder="Discount code"
+                aria-label="Discount code"
+              />
+              <button type="submit" class="btn btn--secondary btn--small">Apply</button>
+            </form>
+          </div>
+
+          <div class="cart-summary__row cart-summary__row--total">
+            <span>Total</span>
+            <span>{formatPrice(cart.total_price, cart.currency)}</span>
+          </div>
+
+          <a href="/checkout" class="btn btn--primary btn--full mt-4">Proceed to Checkout</a>
+
+          <div class="text-center mt-4">
+            <a href="/products" class="btn--link" style="font-size:var(--text-sm);">Continue Shopping</a>
+          </div>
+        </div>
+      </>
+    )}
+  </div>
+</BaseLayout>
+
+<script>
+  // Quantity update buttons
+  document.querySelectorAll('[data-update-quantity]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const el = btn as HTMLElement;
+      const itemId = el.dataset.itemId;
+      const cartToken = el.dataset.cartToken;
+      const quantity = parseInt(el.dataset.quantity ?? '0', 10);
+
+      try {
+        await fetch('/api/cart/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cart_token: cartToken,
+            item_id: itemId,
+            quantity: Math.max(0, quantity),
+          }),
+        });
+        window.location.reload();
+      } catch {
+        // Ignore errors silently
+      }
+    });
+  });
+
+  // Remove item buttons
+  document.querySelectorAll('[data-remove-item]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const el = btn as HTMLElement;
+      const itemId = el.dataset.removeItem;
+      const cartToken = el.dataset.cartToken;
+
+      try {
+        await fetch('/api/cart/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cart_token: cartToken,
+            item_id: itemId,
+            quantity: 0,
+          }),
+        });
+        window.location.reload();
+      } catch {
+        // Ignore errors silently
+      }
+    });
+  });
+</script>

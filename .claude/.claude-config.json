@@ -1,0 +1,25 @@
+{
+  "codingLevel": 2,
+  "workflow": {
+    "hasTests": false,
+    "skipBlockers": ["cook", "fix"],
+    "chains": {
+      "brainstorm": ["plan", "cook", "test", "simplify", "review", "git"],
+      "plan": ["cook", "test", "simplify", "review", "git"],
+      "cook": ["test", "simplify", "review", "git"],
+      "debug": ["fix", "simplify", "review", "git"],
+      "fix": ["simplify", "review", "git"],
+      "test": ["simplify", "review", "git"],
+      "simplify": ["review", "git"],
+      "review": ["git"]
+    }
+  },
+  "paths": {
+    "rules": ".claude/rules",
+    "skills": ".claude/skills",
+    "agents": ".claude/agents",
+    "plans": "plans",
+    "reports": "plans/reports",
+    "docs": "docs"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "delay": 2000,
+  "item": {
+    "xpath": "//article[contains(@class,'card') or contains(@class,'product-card')] | //li[contains(@class,'product')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//h3[contains(@class,'card-title')] | .//*[@data-test='card-title'] | .//h2",
+        "attr": null,
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//img[contains(@class,'card-image') or contains(@class,'productView-image')] | .//img",
+        "attr": "src",
+        "replaces": null
+      },
+      {
+        "name": "Link",
+        "xpath": ".//a[contains(@class,'card-figure__link')] | .//a[contains(@href,'/products/')] | .//a",
+        "attr": "href",
+        "replaces": null
+      },
+      {
+        "name": "Price",
+        "xpath": ".//*[contains(@class,'price--withoutTax') or contains(@class,'price-section') or contains(@class,'card-text--price')]",
+        "attr": null,
+        "replaces": [
+          { "from": "$", "to": "" },
+          { "from": "USD", "to": "" },
+          { "from": ",", "to": "" }
+        ]
+      },
+      {
+        "name": "Description",
+        "xpath": "//div[contains(@class,'productView-description') or @id='tab-description']",
+        "attr": null,
+        "replaces": null
+      },
+      {
+        "name": "Variants",
+        "xpath": "//div[contains(@class,'productView-options')]//input | //select[contains(@class,'productView-option')]//option"
+      }
+    ],
+    "images_in_detail": {
+      "name": "GalleryImages",
+      "xpath": "//ul[contains(@class,'productView-thumbnails')]//img | //figure[contains(@class,'productView-image')]//img",
+      "attr": "src",
+      "replaces": null
+    }
+  }
+}

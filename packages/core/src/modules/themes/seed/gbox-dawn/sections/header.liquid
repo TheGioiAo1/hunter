@@ -1,0 +1,68 @@
+<header class="site-header" role="banner">
+  <div class="page-width site-header__inner">
+    <a class="site-header__logo" href="/" aria-label="{{ shop.name }}">
+      {%- if section.settings.logo != blank -%}
+        <img src="{{ section.settings.logo }}" alt="{{ shop.name }}" height="40">
+      {%- else -%}
+        <span class="site-header__logo-text">{{ shop.name }}</span>
+      {%- endif -%}
+    </a>
+
+    <nav class="site-header__nav" aria-label="{{ 'header.primary_navigation' | t }}">
+      <ul>
+        <li><a href="/">{{ 'header.home' | t }}</a></li>
+        <li><a href="/collections">{{ 'header.collections' | t }}</a></li>
+        <li><a href="/blogs/news">{{ 'header.blog' | t }}</a></li>
+        <li><a href="/pages/about">{{ 'header.about' | t }}</a></li>
+        <li><a href="/pages/contact">{{ 'header.contact' | t }}</a></li>
+      </ul>
+    </nav>
+
+    <div class="site-header__actions">
+      <form action="/search" method="get" role="search" class="site-header__search">
+        <label class="visually-hidden" for="header-search">{{ 'header.search' | t }}</label>
+        <input id="header-search" type="search" name="q" placeholder="{{ 'header.search' | t }}">
+      </form>
+
+      {%- if customer -%}
+        <a class="site-header__icon" href="/account" aria-label="{{ 'header.account' | t }}">
+          {% render 'icon-account' %}
+          <span class="visually-hidden">{{ customer.first_name | default: customer.email }}</span>
+        </a>
+      {%- else -%}
+        <a class="site-header__icon" href="/account/login" aria-label="{{ 'header.login' | t }}">
+          {% render 'icon-account' %}
+        </a>
+      {%- endif -%}
+
+      <a class="site-header__icon site-header__cart" href="/cart" aria-label="{{ 'header.cart' | t }}">
+        {% render 'icon-cart' %}
+        <span class="site-header__cart-count" data-cart-count>{{ cart.item_count | default: 0 }}</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+{% schema %}
+{
+  "name": "t:sections.header.name",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "t:sections.header.settings.logo.label"
+    },
+    {
+      "type": "select",
+      "id": "sticky_header_type",
+      "label": "t:sections.header.settings.sticky_header_type.label",
+      "options": [
+        { "value": "none", "label": "t:sections.header.settings.sticky_header_type.options.none" },
+        { "value": "on_scroll_up", "label": "t:sections.header.settings.sticky_header_type.options.on_scroll_up" },
+        { "value": "always", "label": "t:sections.header.settings.sticky_header_type.options.always" }
+      ],
+      "default": "on_scroll_up"
+    }
+  ]
+}
+{% endschema %}

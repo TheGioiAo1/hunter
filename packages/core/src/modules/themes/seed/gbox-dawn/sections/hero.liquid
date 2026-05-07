@@ -1,0 +1,27 @@
+<section class="hero" {% if section.settings.background_image != blank %}style="background-image: url('{{ section.settings.background_image }}')"{% endif %}>
+  <div class="page-width hero__inner">
+    <h1 class="hero__heading">{{ section.settings.heading }}</h1>
+    {%- if section.settings.subheading != blank -%}
+      <p class="hero__subheading">{{ section.settings.subheading }}</p>
+    {%- endif -%}
+    {%- if section.settings.cta_label != blank and section.settings.cta_link != blank -%}
+      <a class="button button--primary" href="{{ section.settings.cta_link }}">{{ section.settings.cta_label }}</a>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "t:sections.hero.name",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "t:sections.hero.settings.heading.label", "default": "Welcome" },
+    { "type": "text", "id": "subheading", "label": "t:sections.hero.settings.subheading.label" },
+    { "type": "text", "id": "cta_label", "label": "t:sections.hero.settings.cta_label.label", "default": "Shop now" },
+    { "type": "url", "id": "cta_link", "label": "t:sections.hero.settings.cta_link.label" },
+    { "type": "image_picker", "id": "background_image", "label": "t:sections.hero.settings.background_image.label" }
+  ],
+  "presets": [
+    { "name": "t:sections.hero.presets.default.name", "category": "Image" }
+  ]
+}
+{% endschema %}

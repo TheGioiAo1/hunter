@@ -1,0 +1,138 @@
+---
+/**
+ * Header component — responsive navigation with logo, menu, and icon actions.
+ */
+import { apiClient, type Menu } from '../../../engine/api-client.js';
+
+interface Props {
+  shopName: string;
+  shopId: string;
+  cartCount?: number;
+}
+
+const { shopName, shopId, cartCount = 0 } = Astro.props;
+
+let mainMenu: Menu | undefined;
+try {
+  const menus = await apiClient.getMenus(shopId);
+  mainMenu = menus.find((m) => m.handle === 'main-menu');
+} catch {
+  // Use fallback menu
+}
+
+const navItems = mainMenu?.items ?? [
+  { title: 'Home', url: '/', children: [] },
+  { title: 'Shop', url: '/products', children: [] },
+  { title: 'About', url: '/pages/about', children: [] },
+  { title: 'Contact', url: '/pages/contact', children: [] },
+];
+---
+
+<div class="announcement-bar">
+  <div class="container">Free shipping on orders over $75</div>
+</div>
+
+<header class="site-header">
+  <div class="site-header__inner">
+    <!-- Mobile menu toggle -->
+    <button
+      class="mobile-menu-toggle"
+      aria-label="Open navigation menu"
+      data-mobile-menu-open
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+      </svg>
+    </button>
+
+    <!-- Logo -->
+    <a href="/" class="site-header__logo">{shopName}</a>
+
+    <!-- Desktop navigation -->
+    <nav class="site-header__nav" aria-label="Main navigation">
+      {navItems.map((item) => (
+        <a href={item.url}>{item.title}</a>
+      ))}
+    </nav>
+
+    <!-- Icon actions -->
+    <div class="site-header__icons">
+      <!-- Search -->
+      <a href="/search" class="site-header__icon" aria-label="Search">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <line x1="16.5" y1="16.5" x2="21" y2="21" />
+        </svg>
+      </a>
+
+      <!-- Account -->
+      <a href="/account/login" class="site-header__icon" aria-label="Account">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1" />
+        </svg>
+      </a>
+
+      <!-- Cart -->
+      <a href="/cart" class="site-header__icon" aria-label={`Cart (${cartCount} items)`}>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6h15l-1.5 9h-12z" />
+          <circle cx="9" cy="20" r="1" />
+          <circle cx="18" cy="20" r="1" />
+          <path d="M6 6L5.2 3H2" />
+        </svg>
+        {cartCount > 0 && (
+          <span class="cart-count">{cartCount > 99 ? '99+' : cartCount}</span>
+        )}
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- Mobile navigation drawer -->
+<div class="mobile-nav" id="mobile-nav" aria-hidden="true">
+  <div class="mobile-nav__overlay" data-mobile-menu-close></div>
+  <div class="mobile-nav__panel" role="dialog" aria-label="Navigation menu">
+    <button class="mobile-nav__close" aria-label="Close navigation menu" data-mobile-menu-close>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    </button>
+    <nav class="mobile-nav__links" aria-label="Mobile navigation">
+      {navItems.map((item) => (
+        <a href={item.url}>{item.title}</a>
+      ))}
+    </nav>
+  </div>
+</div>
+
+<script>
+  // Mobile menu toggle
+  const mobileNav = document.getElementById('mobile-nav');
+  if (mobileNav) {
+    document.querySelectorAll('[data-mobile-menu-open]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        mobileNav.classList.add('is-open');
+        mobileNav.setAttribute('aria-hidden', 'false');
+      });
+    });
+
+    document.querySelectorAll('[data-mobile-menu-close]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        mobileNav.classList.remove('is-open');
+        mobileNav.setAttribute('aria-hidden', 'true');
+      });
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && mobileNav.classList.contains('is-open')) {
+        mobileNav.classList.remove('is-open');
+        mobileNav.setAttribute('aria-hidden', 'true');
+      }
+    });
+  }
+</script>

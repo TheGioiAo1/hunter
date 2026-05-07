@@ -1,0 +1,46 @@
+---
+/**
+ * CMS Page catch-all — renders static pages (about, contact, policies, etc.)
+ * from the Gbox CMS API by slug.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { apiClient } from '../../../engine/api-client.js';
+
+const shopId = Astro.locals.shopId;
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/');
+}
+
+// Only handle pages/* slugs — skip products/ and account/ routes
+const reservedPrefixes = ['products', 'account', 'cart', 'checkout', 'auth', 'api', 'search', 'blog'];
+const firstSegment = slug.split('/')[0];
+if (reservedPrefixes.includes(firstSegment)) {
+  return new Response(null, { status: 404 });
+}
+
+// Strip "pages/" prefix if present (e.g., /pages/about -> about)
+const pageSlug = slug.startsWith('pages/') ? slug.slice(6) : slug;
+
+const page = await apiClient.getPage(shopId, pageSlug);
+
+if (!page) {
+  return new Response(null, { status: 404 });
+}
+---
+
+<BaseLayout title={page.title} description={page.body_html?.replace(/<[^>]+>/g, '').slice(0, 160)}>
+  <div class="cms-page">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="breadcrumb__separator" aria-hidden="true">/</span>
+      <span aria-current="page">{page.title}</span>
+    </nav>
+
+    <h1 class="cms-page__title">{page.title}</h1>
+
+    <div class="cms-page__content" set:html={page.body_html} />
+  </div>
+</BaseLayout>

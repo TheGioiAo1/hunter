@@ -1,0 +1,207 @@
+# ============================================================================
+# Gbox Platform — Nginx site config for Server 1 (192.168.1.13)
+# Managed file — rendered by scripts/deploy/apply-nginx.sh
+#
+# Routing map lives in MEMORY.md → nginx_routing.md and is also documented in
+# CLAUDE.md (Phase 0 B — 3-server LAN bootstrap).
+#
+# DO NOT hand-edit this in-place on the server. Edit the template in the repo
+# and re-run: bash scripts/bootstrap-3-servers.sh --nginx
+# ============================================================================
+
+# Local admin PM2 apps on server 1
+upstream gbox_god_admin {
+    server 127.0.0.1:4324;
+    keepalive 16;
+}
+
+upstream gbox_accounts {
+    server 127.0.0.1:4323;
+    keepalive 16;
+}
+
+upstream gbox_store_admin {
+    server 127.0.0.1:4325;
+    keepalive 16;
+}
+
+upstream gbox_checkout {
+    server 127.0.0.1:4327;
+    keepalive 16;
+}
+
+# Phase 12.5 PR3 — supporter.gbox.co (internal support agent portal)
+upstream gbox_supporter {
+    server 127.0.0.1:4328;
+    keepalive 16;
+}
+
+upstream gbox_platform_local {
+    server 127.0.0.1:4321;
+    keepalive 16;
+}
+
+# Remote REST API on server 2
+upstream gbox_api {
+    server 192.168.1.30:4321;
+    keepalive 32;
+}
+
+# Remote public storefront on server 3
+upstream gbox_storefront {
+    server 192.168.1.19:4321;
+    keepalive 32;
+}
+
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+
+    client_max_body_size 50M;
+    proxy_http_version 1.1;
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Connection        "";
+
+    # Health endpoint served directly by nginx (no upstream hop)
+    location = /nginx-health {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 "ok\n";
+    }
+
+    # ----------- God Admin (BASE_PATH-aware, NO prefix strip) -----------
+    location /god-admin/ {
+        proxy_pass http://gbox_god_admin;
+    }
+    location = /god-admin {
+        return 301 /god-admin/;
+    }
+
+    # ----------- Accounts portal (BASE_PATH-aware, NO prefix strip) -----
+    location /accounts/ {
+        proxy_pass http://gbox_accounts;
+    }
+    location = /accounts {
+        return 301 /accounts/;
+    }
+
+    # ----------- Store Admin (/admin/store/:slug/*) ---------------------
+    location /admin/ {
+        proxy_pass http://gbox_store_admin;
+    }
+    location = /admin {
+        return 302 /accounts/stores;
+    }
+
+    # ----------- Checkout (BASE_PATH-aware, NO prefix strip) ------------
+    location /checkout/ {
+        proxy_pass http://gbox_checkout;
+    }
+    location = /checkout {
+        return 301 /checkout/;
+    }
+
+    # ----------- Local platform API (strips /_platform prefix) ----------
+    location /_platform/ {
+        proxy_pass http://gbox_platform_local/;
+    }
+
+    # ----------- Shopify-compat REST API → server 2 ---------------------
+    location /api/ {
+        proxy_pass http://gbox_api;
+    }
+    location = /health {
+        proxy_pass http://gbox_api/health;
+    }
+
+    # ----------- Catch-all: public storefront → server 3 (Astro SSR) ----
+    location / {
+        proxy_pass http://gbox_storefront;
+    }
+}
+
+# ============================================================================
+# supporter.gbox.co — Internal support agent portal (Phase 12.5 PR3)
+#
+# A full subdomain rather than a path prefix because:
+#   1. The app uses its own `gbox_session` cookie scoped to the subdomain,
+#      which shares the session pool with accounts.gbox.co without letting
+#      sellers hit supporter URLs.
+#   2. Content-security-policy headers on the other apps can be tightened
+#      without worrying about internal-tooling exceptions.
+#   3. Crawlers + seller support links never resolve supporter.gbox.co
+#      unless the user is explicitly invited.
+#
+# SSL termination is at the Cloudflare edge; this block handles plain HTTP
+# from the proxy. Iron Rule 5: we do NOT mount this under /god-admin/ —
+# the supporter hostname is a discrete internal-tooling surface.
+# ============================================================================
+server {
+    listen 80;
+    listen [::]:80;
+    server_name supporter.gbox.co;
+
+    client_max_body_size 10M;  # Tickets + invite forms only — no file uploads yet
+    proxy_http_version 1.1;
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Connection        "";
+
+    location = /healthz {
+        proxy_pass http://gbox_supporter/healthz;
+        access_log off;
+    }
+
+    location / {
+        proxy_pass http://gbox_supporter;
+    }
+}
+
+# supporter.gbox.co — HTTPS variant (must be explicit, otherwise *.gbox.co
+# wildcard above catches it and routes to the storefront). Same body as the
+# port-80 block; we just terminate TLS with the shared Cloudflare origin cert.
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name supporter.gbox.co;
+
+    ssl_certificate     /etc/ssl/cloudflare/gbox.co.pem;
+    ssl_certificate_key /etc/ssl/cloudflare/gbox.co.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    client_max_body_size 10M;
+    access_log /var/log/nginx/gbox-supporter-access.log;
+    error_log  /var/log/nginx/gbox-supporter-error.log;
+
+    location = /healthz {
+        proxy_pass http://gbox_supporter/healthz;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $real_cf_ip;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Connection        "";
+        access_log off;
+    }
+
+    location / {
+        proxy_pass http://gbox_supporter;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $real_cf_ip;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Connection        "";
+        proxy_read_timeout 60s;
+        proxy_connect_timeout 10s;
+    }
+}

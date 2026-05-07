@@ -1,0 +1,21 @@
+{% comment %} PDP — product detail page. Image gallery + buy box + description. {% endcomment %}
+<article class="pdp" data-product-id="{{ product.id }}">
+  <div class="container pdp-grid">
+    <div class="pdp-gallery">
+      {% for image in product.images %}
+        <img src="{{ image.url }}" alt="{{ image.alt | default: product.title }}" loading="lazy">
+      {% endfor %}
+    </div>
+    <div class="pdp-buybox">
+      <h1 class="product-title">{{ product.title }}</h1>
+      <p class="product-price">{{ product.price_formatted }}</p>
+      {% if product.description %}
+        <div class="product-description">{{ product.description }}</div>
+      {% endif %}
+      <form class="product-form" method="post" action="/cart/add">
+        <input type="hidden" name="variant_id" value="{{ product.default_variant_id }}">
+        <button type="submit" class="btn btn-primary">{{ add_to_cart_label | default: 'Add to cart' }}</button>
+      </form>
+    </div>
+  </div>
+</article>

@@ -1,0 +1,25 @@
+{% comment %}
+  variant: video-bg
+  tokens_required: [colors.primary, colors.foreground, fonts.primary, layout.container_max_width]
+  description: Autoplay video background with overlay text. Used by lifestyle / fashion brands.
+{% endcomment %}
+<div class="hero hero--video-bg">
+  {% if hero.video_url %}
+    <video class="hero__video" autoplay loop muted playsinline preload="metadata" poster="{{ hero.video_poster | default: hero.image_url }}">
+      <source src="{{ hero.video_url }}" type="video/mp4">
+    </video>
+  {% elsif hero.image_url %}
+    <img class="hero__bg" src="{{ hero.image_url }}" alt="" loading="eager">
+  {% endif %}
+  <div class="hero__overlay hero__overlay--dark">
+    <div class="container">
+      <h1 class="hero__headline">{{ hero.headline }}</h1>
+      {% if hero.subhead %}
+        <p class="hero__subhead">{{ hero.subhead }}</p>
+      {% endif %}
+      {% if hero.cta_label and hero.cta_href %}
+        <a class="btn btn-primary" href="{{ hero.cta_href }}">{{ hero.cta_label }}</a>
+      {% endif %}
+    </div>
+  </div>
+</div>

@@ -1,0 +1,39 @@
+{
+  "sections": {
+    "hero": {
+      "type": "hero",
+      "settings": {
+        "heading": "Welcome to {{ shop.name }}",
+        "subheading": "Hand-picked goods, fast shipping, fair prices.",
+        "cta_label": "Shop the collection",
+        "cta_link": "/collections/all"
+      }
+    },
+    "featured-collection": {
+      "type": "featured-collection",
+      "settings": {
+        "heading": "Featured products",
+        "collection_handle": "frontpage",
+        "products_to_show": 8
+      }
+    },
+    "image-with-text": {
+      "type": "image-with-text",
+      "settings": {
+        "heading": "Crafted in Vietnam",
+        "text": "Every product on Gbox is sourced and verified by our team.",
+        "image": "",
+        "link_label": "Read our story",
+        "link_url": "/pages/about"
+      }
+    },
+    "newsletter": {
+      "type": "newsletter",
+      "settings": {
+        "heading": "Join the list",
+        "subheading": "Drops, restocks, and the occasional discount."
+      }
+    }
+  },
+  "order": ["hero", "featured-collection", "image-with-text", "newsletter"]
+}

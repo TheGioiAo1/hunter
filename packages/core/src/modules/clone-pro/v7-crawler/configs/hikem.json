@@ -1,0 +1,20 @@
+﻿{
+  "delay": 0,
+  "item": {
+    "xpath": "//div[contains(@class, 'product-small box')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//div[contains(@class, 'image-fade_in_back')]/a",
+        "attr":"href",
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//img[contains(@class, 'attachment-woocommerce_thumbnail')]",
+        "attr": "src",
+        "replaces":null
+      }
+    ]
+  }
+}

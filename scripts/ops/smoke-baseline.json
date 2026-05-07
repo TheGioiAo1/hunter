@@ -1,0 +1,211 @@
+{
+  "updatedAt": "2026-04-24T00:00:00.000Z",
+  "entries": [
+    {
+      "name": "smoke-phase10-pr1",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase10-pr2",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase10-pr3",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase10-pr4",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase11-pr1",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase11-pr2",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase12-5-pr1",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase12-5-pr2",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase12-5-pr3",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase12-5-pr4",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase12-5-pr5",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase12-5-pr6",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase4-pr2",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase4-pr3",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase4-pr4",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase4-pr5",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase5-pr1",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase5-pr2",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase5-pr3",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase5-pr4",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase5-pr5",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase6-pr1",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase6-pr2",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase6-pr3",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase6-pr4",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase6-pr5",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase7-pr1",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase7-pr2",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase7-pr3",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase7-pr4",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase7-pr5",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase8-pr1",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase8-pr2",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase8-pr3",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase8-pr4",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase9-pr1",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase9-pr2",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase9-pr3",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase9-pr4",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase14-pr1",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase14-pr1-5",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase14-pr2",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase14-pr3",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase14-pr4",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase14-pr4b",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase14-pr5",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase14-pr6",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase14-pr7",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase15-pr1",
+      "expectedPass": true
+    },
+    {
+      "name": "smoke-phase15-pr2",
+      "expectedPass": true,
+      "note": "Payment webhook idempotency — ledger + dedup + mark-processed"
+    },
+    {
+      "name": "smoke-phase19-pr1",
+      "expectedPass": true,
+      "note": "Clone Pro v5 PR1 — Shopify-native pipeline smoke (offline, mocked fetch)"
+    }
+  ]
+}

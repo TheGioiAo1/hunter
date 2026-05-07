@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "@gbox/db": ["../db/src/index.ts"],
+      "@gbox/db/*": ["../db/src/*"],
+      "@gbox/agent-guard": ["../agent-guard/src/index.ts"],
+      "@gbox/agent-guard/*": ["../agent-guard/src/*"],
+      "@gbox/agent-core": ["../agent-core/src/index.ts"],
+      "@gbox/agent-core/*": ["../agent-core/src/*"]
+    },
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,19 @@
+{% comment %} Homepage template — composes hero + featured-products grid. {% endcomment %}
+{%- assign hero_section = 'sections/hero-' | append: component_hero_variant -%}
+{%- assign card_section = 'sections/product-card-' | append: component_product_card_variant -%}
+<section class="home-hero">
+  {% include hero_section %}
+</section>
+
+<section class="home-featured" aria-labelledby="featured-heading">
+  <div class="container">
+    <h2 id="featured-heading" class="section-title">{{ featured_title | default: 'Featured' }}</h2>
+    <ul class="product-grid grid-cols-{{ layout_grid_columns | default: 3 }}">
+      {% for product in featured_products %}
+        <li class="product-grid-item">
+          {% include card_section, product: product %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>

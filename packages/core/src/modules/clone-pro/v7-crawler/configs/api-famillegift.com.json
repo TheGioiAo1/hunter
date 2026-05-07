@@ -1,0 +1,18 @@
+﻿{
+  "delay": 1000,
+  "item": {
+    "elements": [
+      {
+        "name": "regex",
+        "xpath": '"value":"(.*?)","url":"(.*?)","img":"(.*?)"',
+		"replaces":[
+			{
+				"from":"-280x280",
+				"to":""
+			}
+		]
+      }
+      
+    ]
+  } 
+}

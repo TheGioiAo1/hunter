@@ -1,0 +1,30 @@
+<article class="product-card">
+  <a class="product-card__link" href="{{ product.url | default: '/products/' | append: product.handle }}">
+    <div class="product-card__media">
+      {%- if product.featured_image_object -%}
+        <img
+          src="{{ product.featured_image_object.src }}"
+          alt="{{ product.featured_image_object.alt | default: product.title | escape }}"
+          {%- if product.featured_image_object.width %} width="{{ product.featured_image_object.width }}"{% endif -%}
+          {%- if product.featured_image_object.height %} height="{{ product.featured_image_object.height }}"{% endif -%}
+          {%- if product.featured_image_object.srcset_json %}
+          srcset="{{ product.featured_image_object.src | img_url: '300x' }} 300w, {{ product.featured_image_object.src | img_url: '600x' }} 600w"
+          sizes="(max-width: 768px) 50vw, 25vw"
+          {%- endif -%}
+          loading="lazy"
+          decoding="async"
+        >
+      {%- elsif product.featured_image -%}
+        <img src="{{ product.featured_image }}" alt="{{ product.title | escape }}" loading="lazy">
+      {%- else -%}
+        <div class="product-card__placeholder"></div>
+      {%- endif -%}
+    </div>
+    <h3 class="product-card__title">{{ product.title }}</h3>
+    {% render 'price', product: product %}
+    {%- unless product.available -%}
+      <span class="product-card__badge">{{ 'product.sold_out' | t }}</span>
+    {%- endunless -%}
+  </a>
+  {% render 'whatsapp-buy', product: product, shop: shop, style: 'mini' %}
+</article>

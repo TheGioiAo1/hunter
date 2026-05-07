@@ -1,0 +1,22 @@
+{
+  "name": "@gbox/agent-tools",
+  "version": "4.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@gbox/agent-core": "file:../agent-core",
+    "@gbox/agent-guard": "file:../agent-guard",
+    "@gbox/api-client": "file:../api-client",
+    "simple-git": "^3.29.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

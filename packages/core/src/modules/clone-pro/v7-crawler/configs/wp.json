@@ -1,0 +1,20 @@
+﻿{
+  "delay": 1000,
+  "item": {
+    "xpath": "//li[contains(@class, 'product-small box')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//p[contains(@class, 'woocommerce-loop-product__link')]/a",
+        "attr": null,
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//img[contains(@class, 'wp-post-image')]",
+        "attr": "src",
+        "replaces": null
+      }
+    ]
+  } 
+}

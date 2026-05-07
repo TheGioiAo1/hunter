@@ -1,0 +1,15 @@
+<nav class="breadcrumb" aria-label="{{ 'breadcrumb.label' | t }}">
+  <ol>
+    <li><a href="/">{{ 'header.home' | t }}</a></li>
+    {%- if collection -%}
+      <li><a href="{{ collection.url | default: '/collections/' | append: collection.handle }}">{{ collection.title }}</a></li>
+    {%- endif -%}
+    {%- if product -%}
+      <li aria-current="page">{{ product.title }}</li>
+    {%- elsif page -%}
+      <li aria-current="page">{{ page.title }}</li>
+    {%- elsif article -%}
+      <li aria-current="page">{{ article.title }}</li>
+    {%- endif -%}
+  </ol>
+</nav>

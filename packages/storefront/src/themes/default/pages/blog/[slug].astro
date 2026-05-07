@@ -1,0 +1,390 @@
+---
+/**
+ * Blog Post Detail — renders a single blog article with navigation and related posts.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { apiClient, type BlogArticle } from '../../../../engine/api-client.js';
+
+const shopId = Astro.locals.shopId;
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/blog');
+}
+
+const article = await apiClient.getArticle(shopId, slug);
+
+if (!article) {
+  return new Response(null, { status: 404 });
+}
+
+// Fetch all articles for prev/next navigation and related posts
+let allArticles: BlogArticle[] = [];
+try {
+  const data = await apiClient.getArticles(shopId, { limit: 50 });
+  allArticles = data.articles ?? [];
+} catch {
+  // Graceful fallback
+}
+
+// Find current article index for prev/next
+const currentIndex = allArticles.findIndex((a) => a.slug === slug);
+const prevArticle = currentIndex > 0 ? allArticles[currentIndex - 1] : null;
+const nextArticle = currentIndex >= 0 && currentIndex < allArticles.length - 1
+  ? allArticles[currentIndex + 1]
+  : null;
+
+// Find related posts (same tags, excluding current)
+const currentTags = new Set(article.tags ?? []);
+const relatedArticles = allArticles
+  .filter((a) => a.slug !== slug && a.tags?.some((t) => currentTags.has(t)))
+  .slice(0, 3);
+
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+function getExcerpt(a: BlogArticle): string {
+  if (a.excerpt) return a.excerpt;
+  if (a.body_html) {
+    return a.body_html.replace(/<[^>]+>/g, '').slice(0, 120) + '...';
+  }
+  return '';
+}
+
+const pageDescription = article.excerpt
+  ?? article.body_html?.replace(/<[^>]+>/g, '').slice(0, 160)
+  ?? '';
+---
+
+<BaseLayout
+  title={article.title}
+  description={pageDescription}
+  ogImage={article.image_url ?? undefined}
+>
+  <div class="container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="breadcrumb__separator" aria-hidden="true">/</span>
+      <a href="/blog">Blog</a>
+      <span class="breadcrumb__separator" aria-hidden="true">/</span>
+      <span aria-current="page">{article.title}</span>
+    </nav>
+
+    <article class="blog-post">
+      <!-- Header -->
+      <header class="blog-post__header">
+        <h1 class="blog-post__title">{article.title}</h1>
+
+        <div class="blog-post__meta">
+          {article.author && (
+            <span class="blog-post__author">By {article.author}</span>
+          )}
+          {article.published_at && (
+            <time datetime={article.published_at}>
+              {formatDate(article.published_at)}
+            </time>
+          )}
+        </div>
+
+        {article.tags && article.tags.length > 0 && (
+          <div class="blog-post__tags">
+            {article.tags.map((tag) => (
+              <a href={`/blog?tag=${encodeURIComponent(tag)}`} class="blog-post__tag">
+                {tag}
+              </a>
+            ))}
+          </div>
+        )}
+      </header>
+
+      <!-- Featured Image -->
+      {article.image_url && (
+        <div class="blog-post__featured-image">
+          <img
+            src={article.image_url}
+            alt={article.title}
+            loading="eager"
+            width="1200"
+            height="630"
+          />
+        </div>
+      )}
+
+      <!-- Content -->
+      <div class="blog-post__content cms-page__content" set:html={article.body_html} />
+
+      <!-- Prev / Next Navigation -->
+      <nav class="blog-post__nav" aria-label="Article navigation">
+        <div class="blog-post__nav-item blog-post__nav-prev">
+          {prevArticle && (
+            <a href={`/blog/${prevArticle.slug}`}>
+              <span class="blog-post__nav-label">
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <polyline points="15 18 9 12 15 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                Previous
+              </span>
+              <span class="blog-post__nav-title">{prevArticle.title}</span>
+            </a>
+          )}
+        </div>
+        <div class="blog-post__nav-item blog-post__nav-next">
+          {nextArticle && (
+            <a href={`/blog/${nextArticle.slug}`}>
+              <span class="blog-post__nav-label">
+                Next
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <polyline points="9 18 15 12 9 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <span class="blog-post__nav-title">{nextArticle.title}</span>
+            </a>
+          )}
+        </div>
+      </nav>
+    </article>
+
+    <!-- Related Posts -->
+    {relatedArticles.length > 0 && (
+      <section class="section">
+        <div class="section__header">
+          <h2 class="section__title">Related Posts</h2>
+        </div>
+        <div class="blog-related-grid">
+          {relatedArticles.map((related) => (
+            <article class="blog-card">
+              <a href={`/blog/${related.slug}`} class="blog-card__link">
+                <div class="blog-card__image">
+                  {related.image_url ? (
+                    <img
+                      src={related.image_url}
+                      alt={related.title}
+                      loading="lazy"
+                      width="400"
+                      height="225"
+                    />
+                  ) : (
+                    <div class="blog-card__placeholder"></div>
+                  )}
+                </div>
+                <div class="blog-card__body">
+                  <div class="blog-card__meta">
+                    {related.published_at && (
+                      <time datetime={related.published_at}>
+                        {formatDate(related.published_at)}
+                      </time>
+                    )}
+                  </div>
+                  <h3 class="blog-card__title">{related.title}</h3>
+                  <p class="blog-card__excerpt">{getExcerpt(related)}</p>
+                </div>
+              </a>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .blog-post {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .blog-post__header {
+    margin-bottom: 2rem;
+  }
+
+  .blog-post__title {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+
+  .blog-post__meta {
+    display: flex;
+    gap: 1rem;
+    font-size: var(--text-sm, 0.875rem);
+    color: var(--color-text-muted, #666);
+    margin-bottom: 0.75rem;
+  }
+
+  .blog-post__author {
+    font-weight: 600;
+  }
+
+  .blog-post__tags {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .blog-post__tag {
+    font-size: var(--text-xs, 0.75rem);
+    padding: 0.25rem 0.75rem;
+    background: var(--color-bg-alt, #f5f5f5);
+    border-radius: 999px;
+    color: var(--color-text-muted, #666);
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+
+  .blog-post__tag:hover {
+    background: var(--color-border, #d4d4d4);
+  }
+
+  .blog-post__featured-image {
+    margin-bottom: 2rem;
+    border-radius: var(--radius, 6px);
+    overflow: hidden;
+  }
+
+  .blog-post__featured-image img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .blog-post__content {
+    margin-bottom: 3rem;
+  }
+
+  /* Prev / Next */
+  .blog-post__nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    padding: 2rem 0;
+    border-top: 1px solid var(--color-border, #e5e5e5);
+  }
+
+  .blog-post__nav-item a {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    padding: 1rem;
+    border-radius: var(--radius, 6px);
+    border: 1px solid var(--color-border, #e5e5e5);
+    transition: border-color 0.15s ease;
+  }
+
+  .blog-post__nav-item a:hover {
+    border-color: var(--color-primary, #1a1a1a);
+  }
+
+  .blog-post__nav-next {
+    text-align: right;
+  }
+
+  .blog-post__nav-label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--color-text-muted, #666);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  .blog-post__nav-next .blog-post__nav-label {
+    justify-content: flex-end;
+  }
+
+  .blog-post__nav-title {
+    font-weight: 600;
+    font-size: var(--text-sm, 0.875rem);
+    line-height: 1.3;
+  }
+
+  /* Related posts grid */
+  .blog-related-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+
+  @media (max-width: 768px) {
+    .blog-related-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .blog-post__nav {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Reuse blog-card styles from blog listing */
+  .blog-card {
+    border-radius: var(--radius, 6px);
+    overflow: hidden;
+    background: var(--color-bg, #fff);
+    border: 1px solid var(--color-border, #e5e5e5);
+    transition: box-shadow 0.2s ease;
+  }
+
+  .blog-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .blog-card__link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .blog-card__image {
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--color-bg-alt, #f5f5f5);
+  }
+
+  .blog-card__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .blog-card__placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #e8e4d8, #d4cfc4);
+  }
+
+  .blog-card__body {
+    padding: 1rem;
+  }
+
+  .blog-card__meta {
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--color-text-muted, #666);
+    margin-bottom: 0.5rem;
+  }
+
+  .blog-card__title {
+    font-size: var(--text-base, 1rem);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+  }
+
+  .blog-card__excerpt {
+    font-size: var(--text-sm, 0.875rem);
+    color: var(--color-text-muted, #666);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

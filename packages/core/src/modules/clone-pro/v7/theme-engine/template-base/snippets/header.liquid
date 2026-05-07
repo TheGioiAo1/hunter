@@ -1,0 +1,6 @@
+{%- comment -%}
+  Sitewide header partial — renders the chosen header variant. Variant is
+  resolved at theme-render time via component-builder.
+{%- endcomment -%}
+{%- assign header_section = 'sections/header-' | append: component_header_variant -%}
+{% include header_section %}

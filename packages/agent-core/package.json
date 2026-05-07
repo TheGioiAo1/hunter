@@ -1,0 +1,23 @@
+{
+  "name": "@gbox/agent-core",
+  "version": "4.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.98",
+    "@gbox/agent-guard": "file:../agent-guard",
+    "@gbox/api-client": "file:../api-client",
+    "jose": "^6.2.2",
+    "kysely": "^0.28.15"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

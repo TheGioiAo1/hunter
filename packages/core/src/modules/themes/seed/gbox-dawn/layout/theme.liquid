@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="{{ request.locale | default: shop.default_locale | default: 'en' }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#111111">
+    <link rel="canonical" href="https://{{ shop.domain }}{{ request.path }}">
+
+    {%- if page_title -%}
+      <title>{{ page_title }} – {{ shop.name }}</title>
+    {%- elsif product -%}
+      <title>{{ product.title }} – {{ shop.name }}</title>
+    {%- elsif collection -%}
+      <title>{{ collection.title }} – {{ shop.name }}</title>
+    {%- elsif page -%}
+      <title>{{ page.title }} – {{ shop.name }}</title>
+    {%- elsif article -%}
+      <title>{{ article.title }} – {{ shop.name }}</title>
+    {%- elsif blog -%}
+      <title>{{ blog.title }} – {{ shop.name }}</title>
+    {%- else -%}
+      <title>{{ shop.name }}</title>
+    {%- endif -%}
+
+    {%- if page_description -%}
+      <meta name="description" content="{{ page_description | escape }}">
+    {%- elsif product.description -%}
+      <meta name="description" content="{{ product.description | strip_html | truncate: 160 | escape }}">
+    {%- elsif collection.description -%}
+      <meta name="description" content="{{ collection.description | strip_html | truncate: 160 | escape }}">
+    {%- elsif page.content -%}
+      <meta name="description" content="{{ page.content | strip_html | truncate: 160 | escape }}">
+    {%- endif -%}
+
+    <link rel="icon" type="image/svg+xml" href="{{ 'favicon.svg' | asset_url }}">
+    <link rel="stylesheet" href="{{ 'theme.css' | asset_url }}">
+
+    {{ content_for_header }}
+  </head>
+
+  <body class="theme-body template-{{ template | default: 'index' | replace: '/', '-' }}">
+    <a class="skip-link" href="#main-content">{{ 'accessibility.skip_to_content' | t }}</a>
+
+    {% section 'header' %}
+
+    <main id="main-content" role="main">
+      {{ content_for_layout }}
+    </main>
+
+    {% section 'footer' %}
+
+    <script src="{{ 'theme.js' | asset_url }}" defer></script>
+  </body>
+</html>

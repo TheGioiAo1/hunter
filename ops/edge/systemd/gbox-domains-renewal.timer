@@ -1,0 +1,40 @@
+# Gbox Platform — Let's Encrypt Renewal Timer
+# (Landing Page System Phase 1D, decision D8)
+#
+# Install at /etc/systemd/system/gbox-domains-renewal.timer.
+# Enable with:
+#
+#     systemctl daemon-reload
+#     systemctl enable --now gbox-domains-renewal.timer
+#
+# Inspect schedule with:
+#
+#     systemctl list-timers gbox-domains-renewal.timer
+#
+# Why 03:00 UTC?
+#   - Lowest Let's Encrypt API load window historically.
+#   - Merchant traffic is at its minimum; a bad nginx reload has
+#     the smallest blast radius.
+#   - Any failures have a full business day to be caught before
+#     the next overnight window.
+#
+# Why daily instead of twice-a-day?
+#   - The renewer has a 30-day window (decision D8), so a single
+#     miss is recoverable without any visible impact on merchants.
+#   - A single hard alert at <= 7 days left fires from the renewer
+#     itself (renewal.ts) so we'd page oncall long before a cert
+#     could actually expire.
+
+[Unit]
+Description=Run Gbox Let's Encrypt renewal batch daily
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 UTC
+# RandomizedDelaySec spreads load across Gbox edge fleet so the LE
+# servers don't see a synchronized burst from every region at once.
+RandomizedDelaySec=30m
+Persistent=true
+Unit=gbox-domains-renewal.service
+
+[Install]
+WantedBy=timers.target

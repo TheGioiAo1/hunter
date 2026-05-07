@@ -1,0 +1,178 @@
+---
+/**
+ * Product Detail Page (PDP) — images gallery, variant selection, add to cart, description, reviews.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AddToCart from '../../components/AddToCart.tsx';
+import { apiClient } from '../../../../engine/api-client.js';
+
+const shopId = Astro.locals.shopId;
+const { slug } = Astro.params;
+
+if (!slug) {
+  return Astro.redirect('/products');
+}
+
+const product = await apiClient.getProduct(shopId, slug);
+
+if (!product) {
+  return new Response(null, { status: 404 });
+}
+
+const firstVariant = product.variants?.[0];
+const price = firstVariant?.price ?? '0.00';
+const compareAtPrice = firstVariant?.compare_at_price;
+const isOnSale = compareAtPrice && parseFloat(compareAtPrice) > parseFloat(price);
+const mainImage = product.images?.[0];
+
+function formatPrice(amount: string, currency = 'USD'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  }).format(parseFloat(amount));
+}
+
+function calcDiscount(original: string, sale: string): number {
+  const orig = parseFloat(original);
+  const s = parseFloat(sale);
+  if (orig <= 0) return 0;
+  return Math.round(((orig - s) / orig) * 100);
+}
+---
+
+<BaseLayout
+  title={product.title}
+  description={product.body_html?.replace(/<[^>]+>/g, '').slice(0, 160)}
+  ogImage={mainImage?.src}
+>
+  <div class="container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="breadcrumb__separator" aria-hidden="true">/</span>
+      <a href="/products">Products</a>
+      <span class="breadcrumb__separator" aria-hidden="true">/</span>
+      <span aria-current="page">{product.title}</span>
+    </nav>
+
+    <div class="product-detail">
+      <!-- Image Gallery -->
+      <div class="product-gallery">
+        <div class="product-gallery__main" id="main-image">
+          {mainImage ? (
+            <img
+              src={mainImage.src}
+              alt={mainImage.alt || product.title}
+              width={mainImage.width ?? 800}
+              height={mainImage.height ?? 800}
+            />
+          ) : (
+            <div style="width:100%;height:100%;background:var(--color-bg-secondary);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted);">
+              No image available
+            </div>
+          )}
+        </div>
+
+        {product.images.length > 1 && (
+          <div class="product-gallery__thumbs">
+            {product.images.map((img, i) => (
+              <button
+                class:list={['product-gallery__thumb', { 'is-active': i === 0 }]}
+                data-image-src={img.src}
+                data-image-alt={img.alt || product.title}
+                aria-label={`View image ${i + 1}`}
+              >
+                <img src={img.src} alt={img.alt || `${product.title} thumbnail ${i + 1}`} loading="lazy" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <!-- Product Info -->
+      <div class="product-info">
+        {product.vendor && (
+          <p class="product-info__vendor">{product.vendor}</p>
+        )}
+
+        <h1 class="product-info__title">{product.title}</h1>
+
+        <div class="product-info__price">
+          {isOnSale ? (
+            <>
+              <span class="product-info__price--current product-info__price--sale">
+                {formatPrice(price)}
+              </span>
+              <span class="product-info__price--compare">
+                {formatPrice(compareAtPrice!)}
+              </span>
+              <span class="product-info__sale-badge">
+                Save {calcDiscount(compareAtPrice!, price)}%
+              </span>
+            </>
+          ) : (
+            <span class="product-info__price--current">{formatPrice(price)}</span>
+          )}
+        </div>
+
+        <!-- Add to Cart (React Island) -->
+        <AddToCart
+          client:load
+          variants={product.variants}
+          options={product.options ?? []}
+          shopId={shopId}
+          productTitle={product.title}
+        />
+
+        <!-- Description -->
+        {product.body_html && (
+          <div class="product-info__description" set:html={product.body_html} />
+        )}
+
+        <!-- Tags -->
+        {product.tags?.length > 0 && (
+          <div style="margin-top:var(--space-6);display:flex;gap:var(--space-2);flex-wrap:wrap;">
+            {product.tags.map((tag) => (
+              <span style="font-size:var(--text-xs);padding:var(--space-1) var(--space-3);border:1px solid var(--color-border);color:var(--color-text-secondary);">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <section class="reviews">
+      <h2 class="reviews__title">Customer Reviews</h2>
+      <p class="text-secondary" style="padding:var(--space-4) 0;">
+        No reviews yet. Be the first to share your thoughts!
+      </p>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  // Image gallery thumbnail switching
+  const mainImageContainer = document.getElementById('main-image');
+  const thumbs = document.querySelectorAll('.product-gallery__thumb');
+
+  thumbs.forEach((thumb) => {
+    thumb.addEventListener('click', () => {
+      const src = (thumb as HTMLElement).dataset.imageSrc;
+      const alt = (thumb as HTMLElement).dataset.imageAlt;
+
+      if (mainImageContainer && src) {
+        const img = mainImageContainer.querySelector('img');
+        if (img) {
+          img.src = src;
+          img.alt = alt ?? '';
+        }
+      }
+
+      // Update active state
+      thumbs.forEach((t) => t.classList.remove('is-active'));
+      thumb.classList.add('is-active');
+    });
+  });
+</script>

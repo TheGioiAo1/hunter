@@ -1,0 +1,53 @@
+{%- comment -%}
+  Phase 3.C — JSON-LD Product structured data.
+  Renders a schema.org/Product markup for Google Rich Results.
+
+  Expects:
+    product   — the product drop (title, description, handle, images, variants, vendor, available)
+    shop      — the shop drop (name, domain)
+{%- endcomment -%}
+
+{%- if product -%}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": {{ product.title | json }},
+  {%- if product.description %}
+  "description": {{ product.description | strip_html | truncate: 5000 | json }},
+  {%- endif %}
+  {%- if product.featured_image %}
+  "image": {{ product.featured_image | json }},
+  {%- endif %}
+  {%- if product.vendor %}
+  "brand": {
+    "@type": "Brand",
+    "name": {{ product.vendor | json }}
+  },
+  {%- endif %}
+  {%- if product.handle %}
+  "url": "https://{{ shop.domain }}/products/{{ product.handle }}",
+  {%- endif %}
+  {%- if product.variants and product.variants.size > 0 %}
+  "offers": {
+    "@type": "AggregateOffer",
+    "priceCurrency": "{{ shop.currency | default: 'USD' }}",
+    "lowPrice": "{{ product.price }}",
+    {%- if product.variants.size > 1 %}
+    "highPrice": "{{ product.variants.last.price }}",
+    {%- endif %}
+    "offerCount": "{{ product.variants.size }}",
+    "availability": "https://schema.org/{% if product.available %}InStock{% else %}OutOfStock{% endif %}"
+  },
+  {%- else %}
+  "offers": {
+    "@type": "Offer",
+    "priceCurrency": "{{ shop.currency | default: 'USD' }}",
+    "price": "{{ product.price | default: '0' }}",
+    "availability": "https://schema.org/{% if product.available %}InStock{% else %}OutOfStock{% endif %}"
+  },
+  {%- endif %}
+  "sku": "{{ product.variants.first.sku | default: product.handle }}"
+}
+</script>
+{%- endif -%}

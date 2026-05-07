@@ -1,0 +1,44 @@
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-col footer-brand">
+        {% if logo_url %}
+          <img src="{{ logo_url }}" alt="{{ shop.name }}" class="footer-logo">
+        {% else %}
+          <h3 class="footer-title">{{ shop.name }}</h3>
+        {% endif %}
+        {% if shop.description %}
+          <p class="footer-description">{{ shop.description }}</p>
+        {% endif %}
+      </div>
+
+      {% if linklists['footer-menu'].links.size > 0 %}
+        <div class="footer-col">
+          <h4 class="footer-heading">Quick Links</h4>
+          <ul class="footer-links">
+            {% for link in linklists['footer-menu'].links %}
+              <li><a href="{{ link.url }}">{{ link.title }}</a></li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      <div class="footer-col">
+        <h4 class="footer-heading">Contact</h4>
+        <ul class="footer-links">
+          {% if shop.email %}
+            <li><a href="mailto:{{ shop.email }}">{{ shop.email }}</a></li>
+          {% endif %}
+          {% if shop.phone %}
+            <li><a href="tel:{{ shop.phone }}">{{ shop.phone }}</a></li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; {{ 'now' | date: '%Y' }} {{ shop.name }}. All rights reserved.</p>
+      <p>Powered by <a href="https://gbox.co" target="_blank">Gbox</a></p>
+    </div>
+  </div>
+</footer>

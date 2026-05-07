@@ -1,0 +1,19 @@
+{
+  "name": "@gbox/cdn-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloudflare Worker fronting cdn.gbox.co + download.gbox.co (spec §10.5)",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --env production",
+    "deploy:staging": "wrangler deploy --env staging",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240314.0",
+    "typescript": "^5.4.0",
+    "wrangler": "^3.35.0"
+  }
+}

@@ -1,0 +1,27 @@
+{% comment %}
+  variant: split
+  tokens_required: [components.header.height, components.header.background, colors.muted]
+  description: Two-row header — utility links + announcement on top, main nav below.
+{% endcomment %}
+<div class="header header--split">
+  <div class="header__utility-row">
+    <div class="container header__utility">
+      {% if announcement_text %}
+        <p class="header__announcement">{{ announcement_text }}</p>
+      {% endif %}
+      <div class="header__utility-links">
+        <a href="/account">{{ account_label | default: 'Account' }}</a>
+        <a href="/cart">{{ cart_label | default: 'Cart' }}{% if cart.item_count > 0 %} ({{ cart.item_count }}){% endif %}</a>
+      </div>
+    </div>
+  </div>
+  <div class="header__main-row">
+    <div class="container header__main">
+      <a class="header__logo" href="/">{{ shop_name }}</a>
+      <nav class="header__nav" aria-label="Primary">
+        {%- assign nav_section = 'sections/nav-' | append: component_nav_variant -%}
+        {% include nav_section %}
+      </nav>
+    </div>
+  </div>
+</div>

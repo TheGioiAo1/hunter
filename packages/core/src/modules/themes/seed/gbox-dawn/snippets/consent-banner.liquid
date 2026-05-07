@@ -1,0 +1,58 @@
+{%- comment -%}
+  Phase 3.D — Cookie consent banner.
+  Reject-by-default per owner decision. Marketing pixels only fire
+  AFTER user clicks "Accept". Pure HTML + inline script, no framework.
+
+  Expects pixel_config variable to be present (any truthy pixel_id
+  means we need consent).
+{%- endcomment -%}
+
+{%- assign needs_consent = false -%}
+{%- if pixel_config.meta_pixel_id and pixel_config.meta_pixel_id != '' -%}
+  {%- assign needs_consent = true -%}
+{%- endif -%}
+{%- if pixel_config.gtm_container_id and pixel_config.gtm_container_id != '' -%}
+  {%- assign needs_consent = true -%}
+{%- endif -%}
+{%- if pixel_config.ga4_measurement_id and pixel_config.ga4_measurement_id != '' -%}
+  {%- assign needs_consent = true -%}
+{%- endif -%}
+{%- if pixel_config.tiktok_pixel_id and pixel_config.tiktok_pixel_id != '' -%}
+  {%- assign needs_consent = true -%}
+{%- endif -%}
+
+{%- if needs_consent -%}
+<div id="gbox-consent-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1e293b;color:#e2e8f0;padding:12px 24px;font-size:14px;font-family:-apple-system,system-ui,sans-serif;box-shadow:0 -2px 12px rgba(0,0,0,0.3)">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+    <p style="margin:0;flex:1;min-width:200px">We use cookies to improve your experience and for analytics. <a href="/pages/privacy-policy" style="color:#818cf8;text-decoration:underline">Learn more</a></p>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button id="gbox-consent-reject" style="padding:8px 16px;border:1px solid #475569;background:transparent;color:#e2e8f0;border-radius:6px;cursor:pointer;font-size:14px">Reject</button>
+      <button id="gbox-consent-accept" style="padding:8px 16px;border:none;background:#6366f1;color:#fff;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600">Accept</button>
+    </div>
+  </div>
+</div>
+<script>
+  (function() {
+    var consent = localStorage.getItem('gbox_consent');
+    if (consent) return; // Already decided — don't show banner.
+
+    var banner = document.getElementById('gbox-consent-banner');
+    if (!banner) return;
+    banner.style.display = 'block';
+
+    document.getElementById('gbox-consent-accept').addEventListener('click', function() {
+      localStorage.setItem('gbox_consent', 'accepted');
+      banner.style.display = 'none';
+      // Load pixel scripts and flush queued events.
+      if (window.__gboxFlushQueue) window.__gboxFlushQueue();
+      // Reload to initialize pixel SDKs.
+      window.location.reload();
+    });
+
+    document.getElementById('gbox-consent-reject').addEventListener('click', function() {
+      localStorage.setItem('gbox_consent', 'rejected');
+      banner.style.display = 'none';
+    });
+  })();
+</script>
+{%- endif -%}

@@ -1,0 +1,42 @@
+﻿{
+  "delay": 1000,
+  "item": {
+    "xpath": "//article[contains(@class, 'item collection-product')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//div[contains(@class, 'image-container ')]/a",
+        "attr": "title",
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//div[contains(@class, 'image-container-position')]/img",
+        "attr": "data-src",
+        "replaces": [
+			{
+				"from":"_{width}x",
+				"to":""
+			}
+		]
+      },
+      {
+        "name": "Link",
+        "xpath": ".//div[contains(@class, 'image-container ')]/a",
+        "attr": "href",
+        "replaces": null
+      },
+	  {
+        "name": "Price",
+        "xpath": ".//span[contains(@class, 'sell-price')]",
+        "attr": null,
+        "replaces": [
+			{
+				"from":"$",
+				"to":""
+			}
+		]
+      }
+    ]
+  } 
+}

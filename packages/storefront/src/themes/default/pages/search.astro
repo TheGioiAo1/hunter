@@ -1,0 +1,201 @@
+---
+/**
+ * Search Results Page — displays product search results from ?q= query.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ProductCard from '../components/ProductCard.astro';
+import { apiClient } from '../../../engine/api-client.js';
+
+const shopId = Astro.locals.shopId;
+const url = new URL(Astro.request.url);
+const query = url.searchParams.get('q')?.trim() ?? '';
+const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1', 10));
+const limit = 12;
+
+let results: any[] = [];
+let total = 0;
+
+if (query) {
+  try {
+    const data = await apiClient.searchProducts(shopId, query, { page, limit });
+    results = data.results ?? [];
+    total = data.total ?? results.length;
+  } catch {
+    // Graceful fallback
+  }
+}
+
+const totalPages = Math.ceil(total / limit);
+
+function buildPageUrl(pageNum: number): string {
+  const u = new URL(url);
+  u.searchParams.set('page', String(pageNum));
+  return u.pathname + u.search;
+}
+---
+
+<BaseLayout title={query ? `Search: ${query}` : 'Search'} description={`Search results for "${query}"`}>
+  <div class="container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="breadcrumb__separator" aria-hidden="true">/</span>
+      <span aria-current="page">Search</span>
+    </nav>
+
+    <h1 class="page-title">Search</h1>
+
+    <!-- Search Form -->
+    <form method="get" action="/search" class="search-form" role="search">
+      <div class="search-form__field">
+        <input
+          type="search"
+          name="q"
+          value={query}
+          placeholder="Search products..."
+          aria-label="Search products"
+          autofocus
+        />
+        <button type="submit" class="btn btn--primary" aria-label="Search">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+            <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+    </form>
+
+    <!-- Results -->
+    {query ? (
+      <>
+        <p class="search-results__count">
+          {total > 0
+            ? `${total} ${total === 1 ? 'result' : 'results'} for "${query}"`
+            : `No results found for "${query}"`}
+        </p>
+
+        {results.length > 0 ? (
+          <div class="grid grid--4">
+            {results.map((result) => {
+              /* Map search result to a Product-like shape for ProductCard */
+              const product = {
+                ...result,
+                body_html: '',
+                vendor: '',
+                product_type: '',
+                status: 'active',
+                tags: [],
+                options: [],
+                created_at: '',
+                updated_at: '',
+                images: result.image
+                  ? [{ id: '0', src: result.image, alt: result.title, position: 0 }]
+                  : [],
+                variants: [
+                  {
+                    id: '0',
+                    title: 'Default',
+                    price: result.price,
+                    compare_at_price: null,
+                    sku: '',
+                    inventory_quantity: 0,
+                    option1: null,
+                    option2: null,
+                    option3: null,
+                    available: true,
+                    image_id: null,
+                  },
+                ],
+              };
+              return <ProductCard product={product} />;
+            })}
+          </div>
+        ) : (
+          <div class="text-center" style="padding:4rem 0;">
+            <p class="text-secondary" style="font-size:var(--text-lg);margin-bottom:1rem;">
+              We couldn't find anything matching your search.
+            </p>
+            <p class="text-secondary">Try different keywords or browse our collections.</p>
+            <a href="/products" class="btn btn--secondary mt-8">Browse Products</a>
+          </div>
+        )}
+
+        <!-- Pagination -->
+        {totalPages > 1 && (
+          <nav class="pagination" aria-label="Search results pagination">
+            {page > 1 && (
+              <a
+                href={buildPageUrl(page - 1)}
+                class="pagination__item pagination__item--arrow"
+                aria-label="Previous page"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
+              </a>
+            )}
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <a
+                href={buildPageUrl(p)}
+                class:list={['pagination__item', { 'is-active': p === page }]}
+                aria-label={`Page ${p}`}
+                aria-current={p === page ? 'page' : undefined}
+              >
+                {p}
+              </a>
+            ))}
+
+            {page < totalPages && (
+              <a
+                href={buildPageUrl(page + 1)}
+                class="pagination__item pagination__item--arrow"
+                aria-label="Next page"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+              </a>
+            )}
+          </nav>
+        )}
+      </>
+    ) : (
+      <div class="text-center" style="padding:4rem 0;">
+        <p class="text-secondary" style="font-size:var(--text-lg);">
+          Enter a search term above to find products.
+        </p>
+      </div>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .search-form {
+    margin-bottom: 2rem;
+    max-width: 600px;
+  }
+
+  .search-form__field {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .search-form__field input {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--color-border, #d4d4d4);
+    border-radius: var(--radius, 6px);
+    font-size: var(--text-base, 1rem);
+    background: var(--color-bg, #fff);
+    color: var(--color-text, #1a1a1a);
+  }
+
+  .search-form__field input:focus {
+    outline: none;
+    border-color: var(--color-primary, #1a1a1a);
+    box-shadow: 0 0 0 1px var(--color-primary, #1a1a1a);
+  }
+
+  .search-results__count {
+    margin-bottom: 1.5rem;
+    color: var(--color-text-muted, #666);
+    font-size: var(--text-sm, 0.875rem);
+  }
+</style>

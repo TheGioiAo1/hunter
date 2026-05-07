@@ -1,0 +1,27 @@
+﻿{
+  "delay": 1000,
+  "item": {
+    "xpath": "//div[contains(@class, 'product-small box')]",
+    "elements": [
+      {
+        "name": "Title",
+        "xpath": ".//p[contains(@class, 'name product-title woocommerce-loop-product__title')]/a",
+        "attr": null,
+        "replaces": null
+      },
+      {
+        "name": "Image",
+        "xpath": ".//img[contains(@class, 'attachment-woocommerce_thumbnail size-woocommerce_thumbnail')]",
+        "attr": "src",
+        "replaces": null
+      },
+	  {
+        "name": "Images",
+        "xpath": ".//div[contains(@class, 'image-fade_in_back')]/a/img",
+        "attr": "src",
+        "replaces": null
+      }
+    ]
+
+  } 
+}

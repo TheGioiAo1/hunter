@@ -1,0 +1,47 @@
+{
+  "name": "reuse-first-check",
+  "skill": "cook",
+  "description": "Verify /cook spawns reuse-scout before creating a new service/handler/util when prior art exists in the fixture.",
+  "fixture": "fixtures/multi-surface-api",
+  "prompt": "/cook Phase 1: Add a createUser handler for api/user surface. The user service already exists in api/admin and api/public — reuse before fork.",
+  "context": {
+    "phase_file": "plans/add-user-surface/phase-01-create-user-handler.md",
+    "surfaces": ["api/public", "api/admin", "api/user"],
+    "existing_candidates": [
+      "src/api/admin/handlers/users/create.ts",
+      "src/api/public/handlers/users/create.ts"
+    ]
+  },
+  "assert": {
+    "behavioral": {
+      "reuse_scout_spawned": true,
+      "reuse_scout_report_written": true,
+      "verdict_is_extract_shared": true,
+      "shared_module_phase_added_before_new_code": true
+    },
+    "files_changed": {
+      "must_include_at_least_one_of": [
+        "src/shared/services/user-service.ts",
+        "src/shared/handlers/users/create.ts",
+        "src/lib/user/create-user.ts"
+      ]
+    },
+    "diff": {
+      "must_refactor_existing_callers": [
+        "src/api/admin/handlers/users/create.ts",
+        "src/api/public/handlers/users/create.ts"
+      ]
+    },
+    "cook_report_sections": {
+      "must_include": [
+        "## Existing utilities considered",
+        "## Shared modules created/updated"
+      ]
+    },
+    "metrics": {
+      "max_tokens": 80000,
+      "max_duration_ms": 240000
+    }
+  },
+  "rationale": "Reuse-First is the core claudex-kit anti-drift rule. Cross-surface duplication (admin/public/user) is the exact scenario it was built for. If /cook forks here it bypassed reuse-scout, which is a hard-gate violation."
+}

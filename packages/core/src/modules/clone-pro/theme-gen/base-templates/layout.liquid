@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="{{ shop.locale | default: 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page_title }} — {{ shop.name }}</title>
+  <meta name="description" content="{{ page_description }}">
+  {% if page_image %}<meta property="og:image" content="{{ page_image }}">{% endif %}
+  <meta property="og:site_name" content="{{ shop.name }}">
+  <meta property="og:type" content="website">
+
+  {{ google_fonts_link }}
+
+  {% if favicon_url %}
+  <link rel="icon" href="{{ favicon_url }}" type="image/x-icon">
+  {% endif %}
+
+  <link rel="stylesheet" href="{{ 'style.css' | asset_url }}">
+  {{ content_for_header }}
+</head>
+<body>
+  {% section 'header' %}
+
+  <main id="main-content" role="main">
+    {{ content_for_layout }}
+  </main>
+
+  {% section 'footer' %}
+
+  <script src="{{ 'script.js' | asset_url }}" defer></script>
+</body>
+</html>

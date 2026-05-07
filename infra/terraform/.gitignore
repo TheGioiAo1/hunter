@@ -1,0 +1,40 @@
+# Terraform — never commit these.
+
+# Local state files — contain resource IDs, API metadata, and sometimes
+# sensitive outputs. For single-dev MVP we keep state local (no S3
+# backend yet), so these files live on Thai's machine only. When we
+# migrate to S3 backend later, these become redundant but the pattern
+# stays the same.
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform.tfstate.lock.info
+
+# Provider plugin binaries — re-downloaded by `terraform init`.
+.terraform/
+.terraform.lock.hcl.bak
+
+# Per-environment override with real values (never commit).
+# We DO commit `terraform.tfvars` with public values (Account IDs,
+# Zone IDs — those aren't secrets), but `*.tfvars.local` is for
+# emergency overrides that should never leave the machine.
+*.tfvars.local
+*.auto.tfvars.local
+
+# Crash dumps.
+crash.log
+crash.*.log
+
+# Output of `terraform plan -out=tfplan` — binary file, regenerate
+# anytime.
+tfplan
+*.tfplan
+
+# SSH keys accidentally dropped here.
+*.pem
+*.key
+
+# Editor noise.
+.vscode/
+.idea/
+*.swp

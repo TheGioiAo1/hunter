@@ -1,0 +1,38 @@
+{
+  "name": "@gbox/core",
+  "version": "4.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.33.1",
+    "@aws-sdk/client-s3": "^3.1037.0",
+    "@gbox/api-client": "file:../api-client",
+    "@types/sanitize-html": "^2.16.1",
+    "bcrypt": "^5.1.1",
+    "cheerio": "^1.2.0",
+    "got": "^15.0.3",
+    "he": "^1.2.0",
+    "htmlparser2": "^10.1.0",
+    "jszip": "^3.10.1",
+    "kysely": "^0.28.15",
+    "liquidjs": "^10.21.0",
+    "p-limit": "^5.0.0",
+    "p-retry": "^8.0.0",
+    "pixelmatch": "^6.0.0",
+    "playwright": "^1.59.1",
+    "pngjs": "^7.0.0",
+    "robots-parser": "^3.0.1",
+    "sanitize-html": "^2.17.3",
+    "xpath-html": "^1.0.3"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cheerio": "^0.22.35",
+    "@types/express": "^5.0.0",
+    "typescript": "^5.7.0"
+  }
+}

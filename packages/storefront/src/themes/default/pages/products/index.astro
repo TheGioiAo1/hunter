@@ -1,0 +1,223 @@
+---
+/**
+ * Collection / Catalog Page — product grid with filters, sorting, and pagination.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+import { apiClient, type ProductFilters } from '../../../../engine/api-client.js';
+
+const shopId = Astro.locals.shopId;
+const url = new URL(Astro.request.url);
+
+// Parse query parameters
+const page = Math.max(1, parseInt(url.searchParams.get('page') ?? '1', 10));
+const limit = 12;
+const sortBy = url.searchParams.get('sort_by') ?? 'featured';
+const category = url.searchParams.get('category') ?? '';
+const minPrice = url.searchParams.get('min_price') ?? '';
+const maxPrice = url.searchParams.get('max_price') ?? '';
+const available = url.searchParams.get('available');
+
+// Build filters
+const filters: ProductFilters = {
+  status: 'active',
+  page,
+  limit,
+  sort_by: sortBy,
+};
+if (category) filters.product_type = category;
+if (minPrice) filters.min_price = minPrice;
+if (maxPrice) filters.max_price = maxPrice;
+if (available === 'true') filters.available = true;
+
+// Fetch products
+let products = [];
+let total = 0;
+try {
+  const result = await apiClient.getProducts(shopId, filters);
+  products = result.products ?? [];
+  total = result.total ?? products.length;
+} catch {
+  // Graceful fallback
+}
+
+// Fetch collections for sidebar categories
+let collections = [];
+try {
+  collections = await apiClient.getCollections(shopId);
+} catch {
+  // Graceful fallback
+}
+
+// Pagination
+const totalPages = Math.ceil(total / limit);
+
+function buildUrl(params: Record<string, string>): string {
+  const u = new URL(url);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v) u.searchParams.set(k, v);
+    else u.searchParams.delete(k);
+  });
+  return u.pathname + u.search;
+}
+---
+
+<BaseLayout title="Products" description="Browse our complete collection of products.">
+  <div class="container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span class="breadcrumb__separator" aria-hidden="true">/</span>
+      <span aria-current="page">Products</span>
+    </nav>
+
+    <div class="catalog">
+      <!-- Sidebar Filters -->
+      <aside class="catalog__sidebar">
+        <!-- Categories -->
+        <div class="catalog__filter-group">
+          <h3>Category</h3>
+          <ul>
+            <li>
+              <a href={buildUrl({ category: '', page: '1' })} class:list={[{ 'is-active': !category }]}>
+                All Products
+              </a>
+            </li>
+            {collections.map((col) => (
+              <li>
+                <a
+                  href={buildUrl({ category: col.slug, page: '1' })}
+                  class:list={[{ 'is-active': category === col.slug }]}
+                >
+                  {col.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <!-- Price Range -->
+        <div class="catalog__filter-group">
+          <h3>Price</h3>
+          <form method="get" action="/products">
+            <input type="hidden" name="sort_by" value={sortBy} />
+            {category && <input type="hidden" name="category" value={category} />}
+            <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
+              <input
+                class="form-input"
+                type="number"
+                name="min_price"
+                placeholder="Min"
+                value={minPrice}
+                min="0"
+                step="0.01"
+                style="padding:0.5rem;"
+              />
+              <span style="color:var(--color-text-muted);">-</span>
+              <input
+                class="form-input"
+                type="number"
+                name="max_price"
+                placeholder="Max"
+                value={maxPrice}
+                min="0"
+                step="0.01"
+                style="padding:0.5rem;"
+              />
+            </div>
+            <button type="submit" class="btn btn--secondary btn--small btn--full">Apply</button>
+          </form>
+        </div>
+
+        <!-- Availability -->
+        <div class="catalog__filter-group">
+          <h3>Availability</h3>
+          <ul>
+            <li>
+              <a href={buildUrl({ available: '', page: '1' })} class:list={[{ 'is-active': !available }]}>
+                All
+              </a>
+            </li>
+            <li>
+              <a href={buildUrl({ available: 'true', page: '1' })} class:list={[{ 'is-active': available === 'true' }]}>
+                In Stock
+              </a>
+            </li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Main Content -->
+      <div>
+        <!-- Toolbar -->
+        <div class="catalog__toolbar">
+          <p class="catalog__count">
+            {total} {total === 1 ? 'product' : 'products'}
+          </p>
+          <div class="catalog__sort">
+            <label for="sort-select">Sort by:</label>
+            <select id="sort-select" onchange="window.location.href=this.value">
+              <option value={buildUrl({ sort_by: 'featured' })} selected={sortBy === 'featured'}>Featured</option>
+              <option value={buildUrl({ sort_by: 'price-asc' })} selected={sortBy === 'price-asc'}>Price, low to high</option>
+              <option value={buildUrl({ sort_by: 'price-desc' })} selected={sortBy === 'price-desc'}>Price, high to low</option>
+              <option value={buildUrl({ sort_by: 'created-desc' })} selected={sortBy === 'created-desc'}>Newest</option>
+              <option value={buildUrl({ sort_by: 'title-asc' })} selected={sortBy === 'title-asc'}>Alphabetically, A-Z</option>
+              <option value={buildUrl({ sort_by: 'title-desc' })} selected={sortBy === 'title-desc'}>Alphabetically, Z-A</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Product Grid -->
+        {products.length > 0 ? (
+          <div class="grid grid--3">
+            {products.map((product) => (
+              <ProductCard product={product} />
+            ))}
+          </div>
+        ) : (
+          <div class="text-center" style="padding:4rem 0;">
+            <h2 style="font-size:var(--text-2xl);margin-bottom:1rem;">No products found</h2>
+            <p class="text-secondary">Try adjusting your filters or search criteria.</p>
+            <a href="/products" class="btn btn--secondary mt-8">Clear Filters</a>
+          </div>
+        )}
+
+        <!-- Pagination -->
+        {totalPages > 1 && (
+          <nav class="pagination" aria-label="Pagination">
+            {page > 1 && (
+              <a
+                href={buildUrl({ page: String(page - 1) })}
+                class="pagination__item pagination__item--arrow"
+                aria-label="Previous page"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
+              </a>
+            )}
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <a
+                href={buildUrl({ page: String(p) })}
+                class:list={['pagination__item', { 'is-active': p === page }]}
+                aria-label={`Page ${p}`}
+                aria-current={p === page ? 'page' : undefined}
+              >
+                {p}
+              </a>
+            ))}
+
+            {page < totalPages && (
+              <a
+                href={buildUrl({ page: String(page + 1) })}
+                class="pagination__item pagination__item--arrow"
+                aria-label="Next page"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+              </a>
+            )}
+          </nav>
+        )}
+      </div>
+    </div>
+  </div>
+</BaseLayout>

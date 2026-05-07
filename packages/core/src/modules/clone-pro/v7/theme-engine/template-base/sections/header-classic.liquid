@@ -1,0 +1,21 @@
+{% comment %}
+  variant: classic
+  tokens_required: [components.header.height, components.header.background, fonts.primary]
+  description: Logo left, nav center, cart + account right. Shopify default.
+{% endcomment %}
+<div class="header header--classic">
+  <div class="container header__classic">
+    <a class="header__logo" href="/">{{ shop_name }}</a>
+    <nav class="header__nav" aria-label="Primary">
+      {%- assign nav_section = 'sections/nav-' | append: component_nav_variant -%}
+      {% include nav_section %}
+    </nav>
+    <div class="header__utility">
+      <a href="/account" aria-label="Account" class="header__utility-link">{{ account_label | default: 'Account' }}</a>
+      <a href="/cart" class="header__utility-link" aria-label="Cart">
+        {{ cart_label | default: 'Cart' }}
+        {% if cart.item_count > 0 %}<span class="header__cart-count">{{ cart.item_count }}</span>{% endif %}
+      </a>
+    </div>
+  </div>
+</div>

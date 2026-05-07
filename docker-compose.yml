@@ -1,0 +1,83 @@
+services:
+  api:
+    build: .
+    image: gbox-platform:latest
+    container_name: gbox-api
+    restart: unless-stopped
+    network_mode: host
+    command: node --import tsx start.mjs
+    environment:
+      - PORT=4321
+      - NODE_ENV=production
+    env_file: .env
+
+  accounts:
+    image: gbox-platform:latest
+    container_name: gbox-accounts
+    restart: unless-stopped
+    network_mode: host
+    command: node --import tsx apps/accounts/src/server.ts
+    environment:
+      - PORT=4323
+      - NODE_ENV=production
+    env_file: .env
+
+  god-admin:
+    image: gbox-platform:latest
+    container_name: gbox-god-admin
+    restart: unless-stopped
+    network_mode: host
+    command: node --import tsx apps/god-admin/src/server.ts
+    environment:
+      - PORT=4324
+      - NODE_ENV=production
+    env_file: .env
+
+  store-admin:
+    image: gbox-platform:latest
+    container_name: gbox-store-admin
+    restart: unless-stopped
+    network_mode: host
+    command: node --import tsx apps/store-admin/src/server.ts
+    environment:
+      - PORT=4325
+      - NODE_ENV=production
+      # Bake same-origin URLs để override mọi .env regeneration
+      # admin.gbox.co dùng nginx path routing (/accounts/* → :4323)
+      - ACCOUNTS_BASE_URL=https://admin.gbox.co
+      - STOREFRONT_BASE_URL=https://admin.gbox.co
+      - CHECKOUT_BASE_URL=https://admin.gbox.co
+    env_file: .env
+
+  storefront:
+    image: gbox-platform:latest
+    container_name: gbox-storefront
+    restart: unless-stopped
+    network_mode: host
+    command: node --import tsx storefront-start.mjs
+    environment:
+      - PORT=4326
+      - NODE_ENV=production
+    env_file: .env
+
+  checkout:
+    image: gbox-platform:latest
+    container_name: gbox-checkout
+    restart: unless-stopped
+    network_mode: host
+    command: node --import tsx apps/checkout/src/server.ts
+    environment:
+      - PORT=4327
+      - NODE_ENV=production
+    env_file: .env
+
+  supporter:
+    image: gbox-platform:latest
+    container_name: gbox-supporter
+    restart: unless-stopped
+    network_mode: host
+    command: node --import tsx apps/supporter/start.mjs
+    environment:
+      - SUPPORTER_PORT=4328
+      - NODE_ENV=production
+    env_file: .env

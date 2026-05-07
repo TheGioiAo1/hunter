@@ -1,0 +1,12 @@
+export * as AppApi from './app/index.js';
+export * as AuthApi from './auth/index.js';
+export * as CdnApi from './cdn/index.js';
+export * as CustomerApi from './customer/index.js';
+export * as EmailApi from './email/index.js';
+export * as LayoutApi from './layout/index.js';
+export * as OrderApi from './order/index.js';
+export * as PageApi from './page/index.js';
+export * as PaymentApi from './payment/index.js';
+export * as ProductApi from './product/index.js';
+export * as ShippingApi from './shipping/index.js';
+export * as ShopApi from './shop/index.js';

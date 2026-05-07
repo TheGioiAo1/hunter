@@ -1,0 +1,34 @@
+{% comment %} Reusable Product Card Snippet {% endcomment %}
+
+<div class="product-card">
+  <a href="{{ product.url }}" class="product-card-link">
+    <div class="product-card-image">
+      {% if product.featured_image %}
+        <img src="{{ product.featured_image | img_url: 'medium' }}" alt="{{ product.featured_image.alt | default: product.title }}" loading="lazy">
+      {% else %}
+        <div class="product-card-placeholder">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+      {% endif %}
+      {% if product.compare_at_price > product.price %}
+        <span class="product-badge sale">Sale</span>
+      {% endif %}
+      {% unless product.available %}
+        <span class="product-badge sold-out">Sold Out</span>
+      {% endunless %}
+    </div>
+
+    <div class="product-card-info">
+      {% if product.vendor %}<p class="product-card-vendor">{{ product.vendor }}</p>{% endif %}
+      <h3 class="product-card-title">{{ product.title }}</h3>
+      <div class="product-card-price">
+        {% if product.compare_at_price > product.price %}
+          <span class="price-sale">{{ product.price | money }}</span>
+          <span class="price-compare">{{ product.compare_at_price | money }}</span>
+        {% else %}
+          <span class="price-regular">{{ product.price | money }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </a>
+</div>

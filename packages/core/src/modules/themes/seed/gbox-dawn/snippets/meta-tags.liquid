@@ -1,0 +1,16 @@
+<meta property="og:site_name" content="{{ shop.name | escape }}">
+<meta property="og:url" content="https://{{ shop.domain }}{{ request.path }}">
+{%- if product -%}
+  <meta property="og:type" content="product">
+  <meta property="og:title" content="{{ product.title | escape }}">
+  <meta property="og:description" content="{{ product.description | strip_html | truncate: 160 | escape }}">
+  {%- if product.featured_image -%}
+    <meta property="og:image" content="{{ product.featured_image }}">
+  {%- endif -%}
+{%- elsif article -%}
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="{{ article.title | escape }}">
+{%- else -%}
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ shop.name | escape }}">
+{%- endif -%}

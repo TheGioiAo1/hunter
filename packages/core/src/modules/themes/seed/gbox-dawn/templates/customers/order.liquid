@@ -1,0 +1,125 @@
+{% comment %}
+  Customer Order Detail Template
+  Displays a single order's details for the logged-in customer.
+{% endcomment %}
+
+<div class="customer-order page-width" style="max-width:800px;margin:40px auto;padding:0 20px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+    <a href="{{ routes.account_url }}" style="color:#666;text-decoration:none;font-size:14px">&larr; Back to Account</a>
+  </div>
+
+  <h1 style="margin-bottom:4px">Order {{ order.name }}</h1>
+  <p style="color:#666;font-size:14px;margin-bottom:32px">
+    Placed on {{ order.created_at | date: "%B %d, %Y" }}
+    &middot;
+    <span style="display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;
+      {% if order.financial_status == 'paid' %}background:#dcfce7;color:#166534{% endif %}
+      {% if order.financial_status == 'pending' %}background:#fef3c7;color:#92400e{% endif %}
+      {% if order.financial_status == 'refunded' %}background:#f3f4f6;color:#6b7280{% endif %}
+    ">{{ order.financial_status | capitalize }}</span>
+    {% if order.fulfillment_status %}
+      <span style="display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;
+        {% if order.fulfillment_status == 'fulfilled' %}background:#dbeafe;color:#1e40af{% endif %}
+        {% if order.fulfillment_status == 'unfulfilled' %}background:#fef3c7;color:#92400e{% endif %}
+      ">{{ order.fulfillment_status | capitalize }}</span>
+    {% endif %}
+  </p>
+
+  <!-- Line Items -->
+  <div style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:24px">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:#f9fafb;border-bottom:1px solid #e5e7eb">
+          <th style="text-align:left;padding:12px 16px;font-size:13px;font-weight:600;color:#6b7280">Product</th>
+          <th style="text-align:center;padding:12px 16px;font-size:13px;font-weight:600;color:#6b7280">Qty</th>
+          <th style="text-align:right;padding:12px 16px;font-size:13px;font-weight:600;color:#6b7280">Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for line_item in order.line_items %}
+        <tr style="border-bottom:1px solid #f3f4f6">
+          <td style="padding:14px 16px">
+            <div style="font-weight:500">{{ line_item.title }}</div>
+            {% if line_item.variant_title %}
+              <div style="font-size:13px;color:#6b7280">{{ line_item.variant_title }}</div>
+            {% endif %}
+            {% if line_item.sku %}
+              <div style="font-size:12px;color:#9ca3af">SKU: {{ line_item.sku }}</div>
+            {% endif %}
+          </td>
+          <td style="padding:14px 16px;text-align:center">{{ line_item.quantity }}</td>
+          <td style="padding:14px 16px;text-align:right;font-weight:500">{{ line_item.price | money }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Order Summary -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+    <!-- Addresses -->
+    <div>
+      {% if order.shipping_address %}
+      <div style="border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:16px">
+        <h3 style="font-size:14px;font-weight:600;margin:0 0 12px;color:#6b7280">Shipping Address</h3>
+        <p style="margin:0;font-size:14px;line-height:1.6">
+          {{ order.shipping_address.first_name }} {{ order.shipping_address.last_name }}<br>
+          {{ order.shipping_address.address1 }}<br>
+          {% if order.shipping_address.address2 %}{{ order.shipping_address.address2 }}<br>{% endif %}
+          {{ order.shipping_address.city }}, {{ order.shipping_address.province }} {{ order.shipping_address.zip }}<br>
+          {{ order.shipping_address.country }}
+        </p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Totals -->
+    <div style="border:1px solid #e5e7eb;border-radius:12px;padding:20px">
+      <h3 style="font-size:14px;font-weight:600;margin:0 0 12px;color:#6b7280">Order Summary</h3>
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px">
+        <span>Subtotal</span>
+        <span>{{ order.subtotal_price | money }}</span>
+      </div>
+      {% if order.total_shipping and order.total_shipping != "0.00" %}
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px">
+        <span>Shipping</span>
+        <span>{{ order.total_shipping | money }}</span>
+      </div>
+      {% endif %}
+      {% if order.total_tax and order.total_tax != "0.00" %}
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px">
+        <span>Tax</span>
+        <span>{{ order.total_tax | money }}</span>
+      </div>
+      {% endif %}
+      {% if order.total_discounts and order.total_discounts != "0.00" %}
+      <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;color:#dc2626">
+        <span>Discount</span>
+        <span>-{{ order.total_discounts | money }}</span>
+      </div>
+      {% endif %}
+      <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:16px;font-weight:700;border-top:1px solid #e5e7eb;margin-top:8px">
+        <span>Total</span>
+        <span>{{ order.total_price | money }} {{ order.currency }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fulfillment tracking -->
+  {% if order.fulfillments.size > 0 %}
+  <div style="border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-top:24px">
+    <h3 style="font-size:14px;font-weight:600;margin:0 0 12px;color:#6b7280">Tracking</h3>
+    {% for fulfillment in order.fulfillments %}
+      <div style="padding:8px 0;font-size:14px">
+        {% if fulfillment.tracking_url %}
+          <a href="{{ fulfillment.tracking_url }}" target="_blank" style="color:#2563eb">
+            {{ fulfillment.tracking_company }} — {{ fulfillment.tracking_number }}
+          </a>
+        {% else %}
+          {{ fulfillment.tracking_company | default: "Carrier" }} — {{ fulfillment.tracking_number | default: "Processing" }}
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
