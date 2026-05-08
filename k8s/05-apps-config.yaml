@@ -9,6 +9,7 @@ data:
   API_URL: https://api.huntershop.us
   SESSION_COOKIE_DOMAIN: .huntershop.us
   ACCOUNTS_BASE_URL: https://accounts.huntershop.us
+  STORE_ADMIN_BASE_URL: https://admin.huntershop.us
   STOREFRONT_BASE_URL: https://huntershop.us
   CHECKOUT_BASE_URL: https://checkout.huntershop.us
   CUSTOMER_COOKIE_DOMAIN: .huntershop.us

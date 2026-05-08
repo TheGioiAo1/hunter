@@ -18,6 +18,7 @@ data:
   SESSION_COOKIE_DOMAIN: .huntershop.us
   CUSTOMER_COOKIE_DOMAIN: .huntershop.us
   CORS_ALLOWED_ORIGIN_SUFFIXES: huntershop.us
+  STORE_ADMIN_BASE_URL: https://admin.huntershop.us
   AWS_REGION: ap-southeast-1
   AWS_DR_REGION: ap-northeast-1
   S3_REGION: ap-southeast-1
