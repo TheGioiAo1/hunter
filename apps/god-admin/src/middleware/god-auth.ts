@@ -28,6 +28,7 @@ import {
   deleteSession,
   clearSessionCookie,
 } from '../../../../packages/core/src/modules/auth/session.js'
+import { getMongoDb } from '../../../../packages/core/src/modules/db/mongo.js'
 import {
   isGodAdmin,
   describeAdminLevel,
@@ -364,11 +365,13 @@ export function createGodAuthMiddleware(db: Kysely<Database>) {
     // but is_default_admin=false) to access God Admin routes. Per
     // CLAUDE.md Rule 2, only Level 0 (is_default_admin=true) may
     // access this app.
-    const userRow = await db
-      .selectFrom('users')
-      .select(['is_default_admin', 'ip_allowlist'])
-      .where('id', '=', result.session.user.id)
-      .executeTakeFirst()
+    const usersDb = await getMongoDb('USERS')
+    const userRow = await usersDb
+      .collection<{ is_default_admin?: boolean; ip_allowlist?: string | string[] }>('users')
+      .findOne(
+        { _id: result.session.user.id } as any,
+        { projection: { is_default_admin: 1, ip_allowlist: 1 } },
+      )
 
     const isDefaultAdmin = userRow?.is_default_admin === true
 
