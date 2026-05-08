@@ -17,6 +17,7 @@ data:
   API_URL: https://api.huntershop.us
   SESSION_COOKIE_DOMAIN: .huntershop.us
   CUSTOMER_COOKIE_DOMAIN: .huntershop.us
+  CORS_ALLOWED_ORIGIN_SUFFIXES: huntershop.us
   AWS_REGION: ap-southeast-1
   AWS_DR_REGION: ap-northeast-1
   S3_REGION: ap-southeast-1
