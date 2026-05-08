@@ -106,7 +106,8 @@ async function seed(): Promise<void> {
     );
     console.log(`[seed] Updated existing shop: ${shopSlug} (id=${shopId})`);
   } else {
-    shopId = nanoid();
+    // Generate a pseudo-ObjectId (24-hex) to satisfy legacy logic requirements
+    shopId = Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
     const shopDoc: ShopDoc = {
       _id: shopId,
       name: shopName,
